@@ -1,11 +1,11 @@
 \documentclass[twocolumn]{article}
 \usepackage[spanish]{babel}
 \usepackage[utf8]{inputenc}
-\usepackage{lipsum}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage[margin=1in]{geometry}
+\usepackage{url}
 
 \title{Simulación de Sistema Coloidal Utilizando el Algoritmo de Verlet}
 \author{Tu Nombre}
@@ -24,19 +24,103 @@
 
 \section{Trabajo Previo}
 \subsection*{Coloides}
-% Información sobre coloides
+Los coloides son sistemas en los que partículas microscópicas o moléculas de una sustancia están dispersas en otra sustancia. Estas partículas, conocidas como fase dispersa, tienen un tamaño que oscila típicamente entre 1 nanómetro y 1 micrómetro, y están suspendidas en un medio continuo llamado fase dispersante. Los coloides son ubicuos en la naturaleza y en aplicaciones tecnológicas, incluyendo ejemplos como la leche, las pinturas, y ciertas aleaciones metálicas.
+
+Las propiedades únicas de los sistemas coloidales surgen de la gran área superficial de las partículas dispersas en relación con su volumen. Esto resulta en interacciones significativas entre las partículas y el medio, así como entre las partículas mismas, lo que lleva a comportamientos fascinantes como el movimiento browniano, la estabilidad coloidal, y fenómenos de agregación.
+
+El estudio de los coloides es fundamental en diversos campos, desde la ciencia de materiales hasta la biología molecular, y su comprensión es crucial para el desarrollo de nuevas tecnologías y aplicaciones en áreas como la medicina, la industria alimentaria y la nanotecnología.
 
 \subsection*{Algoritmo de Verlet}
-% Descripción del algoritmo de Verlet
+El algoritmo de Verlet es un método numérico ampliamente utilizado en simulaciones de dinámica molecular, incluyendo sistemas coloidales. Desarrollado por Loup Verlet en 1967, este algoritmo proporciona una forma eficiente y precisa de integrar las ecuaciones de movimiento de Newton para un sistema de partículas interactuantes.
+
+El algoritmo de Verlet es fundamental para nuestra simulación \cite{verlet_wiki}.
+La formulación básica del algoritmo de Verlet para actualizar la posición de una partícula es:
+
+\begin{equation}
+    \mathbf{r}(t + \Delta t) = 2\mathbf{r}(t) - \mathbf{r}(t - \Delta t) + \mathbf{a}(t)\Delta t^2 + O(\Delta t^4)
+\end{equation}
+
+donde $\mathbf{r}(t)$ es la posición en el tiempo $t$, $\Delta t$ es el paso de tiempo, y $\mathbf{a}(t)$ es la aceleración.
+
+Las principales ventajas del algoritmo de Verlet incluyen:
+
+\begin{itemize}
+    \item Simplicidad de implementación
+    \item Estabilidad numérica
+    \item Conservación de la energía en sistemas conservativos
+    \item Reversibilidad en el tiempo
+\end{itemize}
+
+En simulaciones de sistemas coloidales, el algoritmo de Verlet permite modelar con precisión las interacciones entre partículas coloidales y el medio dispersante, capturando fenómenos como el movimiento browniano y las fuerzas intermoleculares. Su eficiencia computacional lo hace ideal para simular sistemas con un gran número de partículas durante períodos prolongados, lo que es crucial para estudiar el comportamiento a largo plazo de los coloides.
+
+Existen variantes del algoritmo, como el Velocity Verlet, que calcula explícitamente las velocidades, lo cual es útil para sistemas que requieren un control preciso de la temperatura o para calcular propiedades dinámicas del sistema.
 
 \subsection*{Simulaciones y Equilibrios Estables}
-% Información sobre simulaciones y equilibrios estables
+Las simulaciones computacionales desempeñan un papel crucial en el estudio de sistemas coloidales, permitiendo explorar su comportamiento en condiciones difíciles de replicar experimentalmente. En particular, las simulaciones de dinámica molecular (DM) son fundamentales para investigar los equilibrios estables en estos sistemas.
 
+En el contexto de los coloides, un equilibrio estable se refiere a una configuración del sistema en la que las fuerzas netas sobre las partículas se anulan mutuamente, resultando en una estructura estable en el tiempo. Las simulaciones permiten estudiar cómo estos equilibrios se establecen y cómo dependen de factores como:
+
+\begin{itemize}
+    \item La concentración de partículas coloidales
+    \item Las interacciones entre partículas (por ejemplo, fuerzas de Van der Waals, interacciones electrostáticas)
+    \item La temperatura y presión del sistema
+    \item La presencia de campos externos (como campos eléctricos o magnéticos)
+\end{itemize}
+
+Las simulaciones de DM, utilizando algoritmos como el de Verlet, son particularmente útiles para estudiar la evolución temporal de estos sistemas hacia el equilibrio. Permiten observar fenómenos como la formación de estructuras, la segregación de fases, y la cristalización coloidal.
+
+Además, las simulaciones facilitan el cálculo de propiedades termodinámicas y estructurales del sistema en equilibrio, como la función de distribución radial, el factor de estructura, y coeficientes de difusión, que son fundamentales para caracterizar el comportamiento coloidal.
 \subsection*{Resultados Conocidos de Otros Investigadores}
-% Resumen de investigaciones previas relevantes
+La investigación en sistemas coloidales mediante simulaciones computacionales ha producido numerosos resultados significativos en las últimas décadas. Algunos hallazgos notables incluyen:
+
+\begin{itemize}
+    \item Frenkel y Ladd (1987) utilizaron simulaciones Monte Carlo para estudiar la transición de fase fluido-sólido en esferas duras, estableciendo una base para el entendimiento de la cristalización coloidal.
+
+    \item Pusey y van Megen (1986) demostraron experimentalmente la cristalización de coloides de esferas duras, validando predicciones teóricas y de simulación previas.
+
+    \item Hynninen y Dijkstra (2003) emplearon simulaciones para explorar diagramas de fase complejos en sistemas coloidales cargados, revelando una rica variedad de estructuras cristalinas.
+
+    \item Fortini et al. (2006) utilizaron simulaciones de dinámica molecular para estudiar la nucleación y el crecimiento cristalino en coloides, proporcionando insights sobre los mecanismos de formación de estructuras ordenadas.
+
+    \item Royall et al. (2013) combinaron experimentos y simulaciones para investigar la formación de vidrios coloidales, arrojando luz sobre la transición vítrea en sistemas de partículas blandas.
+\end{itemize}
+
+Estos estudios han establecido la importancia de las simulaciones en la predicción y comprensión del comportamiento coloidal, desde fenómenos de autoorganización hasta transiciones de fase complejas. Los resultados han sido fundamentales para el desarrollo de nuevas teorías y la optimización de aplicaciones prácticas en campos como la ciencia de materiales y la nanotecnología.
 
 \section{Metodología}
-% Descripción de la metodología utilizada
+Para llevar a cabo la simulación del sistema coloidal utilizando el algoritmo de Verlet, se diseñó una estructura de programa que consta de varios componentes clave:
+
+\subsection*{Estructura de la Simulación}
+\begin{itemize}
+    \item \textbf{Modelo de Partícula}: Se definió una estructura para representar cada partícula coloidal, incluyendo propiedades como posición, velocidad, y masa.
+
+    \item \textbf{Sistema de Simulación}: Se implementó una estructura principal que contiene el conjunto de partículas, parámetros de simulación (como tamaño de caja, paso de tiempo), y funciones para manejar la evolución del sistema.
+
+    \item \textbf{Cálculo de Fuerzas}: Se diseñó un módulo para calcular las interacciones entre partículas, considerando fuerzas como las de Van der Waals y las electrostáticas.
+
+    \item \textbf{Condiciones de Contorno}: Se implementaron condiciones de contorno periódicas para simular un sistema infinito y evitar efectos de borde.
+\end{itemize}
+
+\subsection*{Diseño del Algoritmo de Verlet}
+El algoritmo de Verlet se implementó como una función central en la simulación, con las siguientes características de diseño:
+
+\begin{itemize}
+    \item \textbf{Entrada}: La función toma como entrada el estado actual del sistema, incluyendo las posiciones y velocidades de todas las partículas, así como el paso de tiempo.
+
+    \item \textbf{Cálculo de Fuerzas}: Antes de actualizar las posiciones, se calcula la fuerza neta sobre cada partícula utilizando el módulo de cálculo de fuerzas.
+
+    \item \textbf{Actualización de Posiciones}: Se implementó la ecuación de Verlet para actualizar las posiciones de las partículas, utilizando las posiciones actuales, las posiciones previas, y las aceleraciones calculadas.
+
+    \item \textbf{Actualización de Velocidades}: Aunque el algoritmo de Verlet básico no calcula explícitamente las velocidades, se incluyó un paso adicional para estimarlas, lo cual es útil para el análisis del sistema.
+
+    \item \textbf{Aplicación de Condiciones de Contorno}: Después de actualizar las posiciones, se aplican las condiciones de contorno periódicas para mantener todas las partículas dentro de la caja de simulación.
+
+    \item \textbf{Salida}: La función devuelve el nuevo estado del sistema, con las posiciones y velocidades actualizadas.
+\end{itemize}
+
+Este diseño modular permite una fácil modificación y extensión del código, facilitando la experimentación con diferentes parámetros y condiciones de simulación. Además, se implementaron funciones auxiliares para inicializar el sistema, recopilar estadísticas durante la simulación, y exportar los resultados para su posterior análisis y visualización.
+
+La implementación se realizó en el lenguaje de programación Zig, aprovechando sus características de rendimiento y seguridad para optimizar la eficiencia computacional de la simulación.
 
 \section{Resultados}
 % Presentación de los resultados obtenidos
@@ -48,7 +132,7 @@
 % Conclusiones del estudio
 
 \begin{thebibliography}{9}
-% Referencias bibliográficas
+\bibitem{verlet_wiki} Wikipedia contributors. (2023). Verlet integration. In Wikipedia, The Free Encyclopedia. Retrieved [insert access date], from \url{https://en.wikipedia.org/wiki/Verlet_integration}
 \end{thebibliography}
 
 \end{document}
