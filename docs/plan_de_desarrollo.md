@@ -14,4 +14,16 @@ Utilizaremos el lenguaje zig
     - deinit (funcion)
 
 ## estructura del reporte
-TODO
+- title
+- abstract
+- introduction
+- previous work
+-- Coloids
+-- Verlet algorithm
+-- simulations and stable equilibria
+-- Known results from other researchers
+- methodology
+- results
+- discussion
+- conclussions
+- bibliography
