@@ -22,7 +22,7 @@
 \section{Introducción}
 % Introducción al tema
 
-\section{Trabajo Previo}
+\section{Marco Teórico}
 \subsection*{Coloides}
 Los coloides son sistemas en los que partículas microscópicas o moléculas de una sustancia están dispersas en otra sustancia. Estas partículas, conocidas como fase dispersa, tienen un tamaño que oscila típicamente entre 1 nanómetro y 1 micrómetro, y están suspendidas en un medio continuo llamado fase dispersante. Los coloides son ubicuos en la naturaleza y en aplicaciones tecnológicas, incluyendo ejemplos como la leche, las pinturas, y ciertas aleaciones metálicas.
 
@@ -30,30 +30,142 @@ Las propiedades únicas de los sistemas coloidales surgen de la gran área super
 
 El estudio de los coloides es fundamental en diversos campos, desde la ciencia de materiales hasta la biología molecular, y su comprensión es crucial para el desarrollo de nuevas tecnologías y aplicaciones en áreas como la medicina, la industria alimentaria y la nanotecnología.
 
-\subsection*{Algoritmo de Verlet}
-El algoritmo de Verlet es un método numérico ampliamente utilizado en simulaciones de dinámica molecular, incluyendo sistemas coloidales. Desarrollado por Loup Verlet en 1967, este algoritmo proporciona una forma eficiente y precisa de integrar las ecuaciones de movimiento de Newton para un sistema de partículas interactuantes.
+\subsection*{Algoritmo de Verlet con Velocidades}
+El algoritmo de Verlet es fundamental para nuestra simulación \cite{verlet_wiki}. En particular, utilizaremos la variante conocida como algoritmo de Verlet con velocidades (Velocity Verlet), que calcula explícitamente las velocidades junto con las posiciones. Este método es especialmente útil en simulaciones de sistemas coloidales donde el cálculo preciso de las velocidades es importante para determinar propiedades dinámicas del sistema.
 
-El algoritmo de Verlet es fundamental para nuestra simulación \cite{verlet_wiki}.
-La formulación básica del algoritmo de Verlet para actualizar la posición de una partícula es:
+La formulación del algoritmo de Verlet con velocidades para actualizar la posición y la velocidad de una partícula es:
 
-\begin{equation}
-    \mathbf{r}(t + \Delta t) = 2\mathbf{r}(t) - \mathbf{r}(t - \Delta t) + \mathbf{a}(t)\Delta t^2 + O(\Delta t^4)
-\end{equation}
+\begin{align}
+    \mathbf{r}(t + \Delta t) &= \mathbf{r}(t) + \mathbf{v}(t)\Delta t + \frac{1}{2}\mathbf{a}(t)\Delta t^2 \\
+    \mathbf{v}(t + \Delta t) &= \mathbf{v}(t) + \frac{1}{2}[\mathbf{a}(t) + \mathbf{a}(t + \Delta t)]\Delta t
+\end{align}
 
-donde $\mathbf{r}(t)$ es la posición en el tiempo $t$, $\Delta t$ es el paso de tiempo, y $\mathbf{a}(t)$ es la aceleración.
+donde $\mathbf{r}(t)$ es la posición, $\mathbf{v}(t)$ es la velocidad, $\mathbf{a}(t)$ es la aceleración en el tiempo $t$, y $\Delta t$ es el paso de tiempo.
 
-Las principales ventajas del algoritmo de Verlet incluyen:
+El algoritmo se implementa en dos etapas:
+\begin{enumerate}
+    \item Se actualizan las posiciones y se calculan las velocidades a medio paso:
+    \begin{align}
+        \mathbf{r}(t + \Delta t) &= \mathbf{r}(t) + \mathbf{v}(t)\Delta t + \frac{1}{2}\mathbf{a}(t)\Delta t^2 \\
+        \mathbf{v}(t + \frac{1}{2}\Delta t) &= \mathbf{v}(t) + \frac{1}{2}\mathbf{a}(t)\Delta t
+    \end{align}
+    \item Se calculan las nuevas aceleraciones $\mathbf{a}(t + \Delta t)$ basadas en las nuevas posiciones, y se completa la actualización de las velocidades:
+    \begin{equation}
+        \mathbf{v}(t + \Delta t) = \mathbf{v}(t + \frac{1}{2}\Delta t) + \frac{1}{2}\mathbf{a}(t + \Delta t)\Delta t
+    \end{equation}
+\end{enumerate}
 
+Este método ofrece varias ventajas para nuestra simulación de sistemas coloidales:
 \begin{itemize}
-    \item Simplicidad de implementación
-    \item Estabilidad numérica
-    \item Conservación de la energía en sistemas conservativos
-    \item Reversibilidad en el tiempo
+    \item Proporciona cálculos precisos tanto de posiciones como de velocidades en cada paso de tiempo.
+    \item Mantiene una buena conservación de la energía a largo plazo.
+    \item Permite un control más preciso de la temperatura del sistema, lo cual es crucial en simulaciones de coloides.
+    \item Facilita el cálculo de propiedades dinámicas como coeficientes de difusión y funciones de correlación de velocidades.
 \end{itemize}
 
-En simulaciones de sistemas coloidales, el algoritmo de Verlet permite modelar con precisión las interacciones entre partículas coloidales y el medio dispersante, capturando fenómenos como el movimiento browniano y las fuerzas intermoleculares. Su eficiencia computacional lo hace ideal para simular sistemas con un gran número de partículas durante períodos prolongados, lo que es crucial para estudiar el comportamiento a largo plazo de los coloides.
+La implementación de este algoritmo en nuestra simulación nos permitirá modelar con precisión la dinámica de las partículas coloidales, capturando efectos sutiles de las interacciones entre partículas y el medio circundante.
+\subsection*{Propagación de Errores en el Algoritmo de Verlet con Velocidades}
+El análisis de la propagación de errores es crucial para comprender la precisión y estabilidad del algoritmo de Verlet con velocidades en simulaciones a largo plazo. Este algoritmo, aunque generalmente estable, no está exento de acumular errores numéricos.
 
-Existen variantes del algoritmo, como el Velocity Verlet, que calcula explícitamente las velocidades, lo cual es útil para sistemas que requieren un control preciso de la temperatura o para calcular propiedades dinámicas del sistema.
+\subsubsection*{Fuentes de Error}
+Los principales factores que contribuyen a la acumulación de errores en el algoritmo de Verlet con velocidades son:
+
+\begin{itemize}
+    \item \textbf{Truncamiento}: Debido a la aproximación de series de Taylor en el desarrollo del algoritmo.
+    \item \textbf{Redondeo}: Causado por la precisión finita de los cálculos en punto flotante.
+    \item \textbf{Paso de tiempo}: La elección del tamaño del paso de tiempo $\Delta t$ afecta significativamente la precisión.
+\end{itemize}
+
+\subsubsection*{Análisis de Error}
+El error local de truncamiento para el algoritmo de Verlet con velocidades es del orden de $O(\Delta t^4)$ para las posiciones y $O(\Delta t^2)$ para las velocidades. Esto significa que:
+
+\begin{align}
+    \text{Error en posición} &\propto \Delta t^4 \
+    \text{Error en velocidad} &\propto \Delta t^2
+\end{align}
+
+El error global, que es la acumulación de errores locales a lo largo de la simulación, crece más lentamente:
+
+\begin{align}
+    \text{Error global en posición} &\propto \Delta t^2 \
+    \text{Error global en velocidad} &\propto \Delta t^2
+\end{align}
+
+\subsubsection*{Estabilidad Numérica}
+La estabilidad del algoritmo depende crucialmente de la elección del paso de tiempo $\Delta t$. Un paso de tiempo demasiado grande puede llevar a inestabilidades numéricas, mientras que uno demasiado pequeño aumenta el costo computacional y puede acumular errores de redondeo.
+
+Para sistemas con fuerzas que varían rápidamente, como las interacciones de corto alcance en coloides, es importante elegir un $\Delta t$ suficientemente pequeño para capturar estas variaciones sin introducir inestabilidades.
+
+\subsubsection*{Conservación de Energía}
+Una ventaja del algoritmo de Verlet con velocidades es su buena conservación de la energía a largo plazo. Sin embargo, pueden observarse oscilaciones en la energía total del sistema. La magnitud de estas oscilaciones es proporcional a $\Delta t^2$, lo que nuevamente subraya la importancia de elegir un paso de tiempo apropiado.
+
+\subsubsection*{Mitigación de Errores}
+Para minimizar la acumulación de errores en nuestra simulación de sistemas coloidales, se han adoptado las siguientes estrategias:
+
+\begin{itemize}
+    \item \textbf{Paso de tiempo adaptativo}: Ajustando $\Delta t$ dinámicamente basado en la magnitud de las fuerzas en el sistema.
+    \item \textbf{Doble precisión}: Utilizando aritmética de punto flotante de doble precisión para reducir errores de redondeo.
+    \item \textbf{Reescalado periódico}: Aplicando técnicas de reescalado de velocidades para mantener la conservación de energía a largo plazo.
+    \item \textbf{Monitoreo de conservación}: Verificando regularmente la conservación de cantidades físicas como la energía total y el momento lineal.
+\end{itemize}
+
+Estas consideraciones sobre la propagación de errores son fundamentales para garantizar la fiabilidad y precisión de nuestras simulaciones de sistemas coloidales, especialmente cuando se estudian fenómenos a largo plazo o se buscan equilibrios estables.
+
+
+\subsection*{Potencial de Lennard-Jones}
+El potencial de Lennard-Jones es un modelo matemático ampliamente utilizado para describir las interacciones entre partículas en sistemas moleculares y coloidales. Este potencial captura tanto las fuerzas atractivas de largo alcance como las repulsivas de corto alcance que existen entre partículas.
+
+\subsubsection*{Formulación Matemática}
+El potencial de Lennard-Jones entre dos partículas separadas por una distancia $r$ se expresa como:
+
+\begin{equation}
+    V(r) = 4\epsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^{6} \right]
+\end{equation}
+
+donde:
+\begin{itemize}
+    \item $\epsilon$ es la profundidad del pozo potencial, que determina la fuerza de la interacción.
+    \item $\sigma$ es la distancia finita a la cual el potencial interpartícula es cero.
+    \item $r$ es la distancia entre las partículas.
+\end{itemize}
+
+\subsubsection*{Componentes del Potencial}
+El potencial de Lennard-Jones se compone de dos términos:
+
+\begin{enumerate}
+    \item El término $(\sigma/r)^{12}$ representa la repulsión de corto alcance debido al principio de exclusión de Pauli.
+    \item El término $-(\sigma/r)^{6}$ modela la atracción de largo alcance (fuerzas de van der Waals).
+\end{enumerate}
+
+\subsubsection*{Características Principales}
+\begin{itemize}
+    \item A distancias cortas ($r < \sigma$), domina la repulsión, evitando el solapamiento de partículas.
+    \item A distancias intermedias, el potencial es atractivo, con un mínimo en $r = 2^{1/6}\sigma$.
+    \item A largas distancias, el potencial tiende a cero, reflejando la disminución de las interacciones.
+\end{itemize}
+
+\subsubsection*{Aplicación en Simulaciones Coloidales}
+En nuestras simulaciones de sistemas coloidales, el potencial de Lennard-Jones se utiliza para modelar:
+
+\begin{itemize}
+    \item Interacciones entre partículas coloidales.
+    \item Interacciones entre partículas coloidales y moléculas del solvente (en simulaciones de grano grueso).
+    \item Fuerzas de solvatación y efectos de estructuración del solvente alrededor de las partículas coloidales.
+\end{itemize}
+
+\subsubsection*{Implementación en el Algoritmo de Verlet}
+Para incorporar el potencial de Lennard-Jones en nuestra simulación:
+
+\begin{enumerate}
+    \item Se calcula la fuerza derivada del potencial:
+    \begin{equation}
+        \mathbf{F}(r) = -\nabla V(r) = 24\epsilon \left[ 2\left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^{6} \right] \frac{\mathbf{r}}{r^2}
+    \end{equation}
+    \item Esta fuerza se incluye en el cálculo de las aceleraciones para cada paso del algoritmo de Verlet.
+    \item Se implementa un radio de corte ($r_c$) para limitar el cálculo de interacciones a distancias relevantes, optimizando el rendimiento computacional.
+\end{enumerate}
+
+La inclusión del potencial de Lennard-Jones en nuestro modelo permite una representación más realista de las interacciones en el sistema coloidal, capturando tanto los efectos repulsivos de corto alcance como las atracciones de largo alcance que son cruciales para el comportamiento de estos sistemas.
 
 \subsection*{Simulaciones y Equilibrios Estables}
 Las simulaciones computacionales desempeñan un papel crucial en el estudio de sistemas coloidales, permitiendo explorar su comportamiento en condiciones difíciles de replicar experimentalmente. En particular, las simulaciones de dinámica molecular (DM) son fundamentales para investigar los equilibrios estables en estos sistemas.
@@ -88,39 +200,92 @@ La investigación en sistemas coloidales mediante simulaciones computacionales h
 Estos estudios han establecido la importancia de las simulaciones en la predicción y comprensión del comportamiento coloidal, desde fenómenos de autoorganización hasta transiciones de fase complejas. Los resultados han sido fundamentales para el desarrollo de nuevas teorías y la optimización de aplicaciones prácticas en campos como la ciencia de materiales y la nanotecnología.
 
 \section{Metodología}
-Para llevar a cabo la simulación del sistema coloidal utilizando el algoritmo de Verlet, se diseñó una estructura de programa que consta de varios componentes clave:
+Para llevar a cabo la simulación del sistema coloidal utilizando el algoritmo de Verlet, se ha diseñado una estructura de programa en el lenguaje de programación Zig. La implementación se basa en un enfoque orientado a objetos, aprovechando las características de rendimiento y seguridad que ofrece Zig.
 
 \subsection*{Estructura de la Simulación}
-\begin{itemize}
-    \item \textbf{Modelo de Partícula}: Se definió una estructura para representar cada partícula coloidal, incluyendo propiedades como posición, velocidad, y masa.
-
-    \item \textbf{Sistema de Simulación}: Se implementó una estructura principal que contiene el conjunto de partículas, parámetros de simulación (como tamaño de caja, paso de tiempo), y funciones para manejar la evolución del sistema.
-
-    \item \textbf{Cálculo de Fuerzas}: Se diseñó un módulo para calcular las interacciones entre partículas, considerando fuerzas como las de Van der Waals y las electrostáticas.
-
-    \item \textbf{Condiciones de Contorno}: Se implementaron condiciones de contorno periódicas para simular un sistema infinito y evitar efectos de borde.
-\end{itemize}
-
-\subsection*{Diseño del Algoritmo de Verlet}
-El algoritmo de Verlet se implementó como una función central en la simulación, con las siguientes características de diseño:
+La simulación se implementa principalmente a través de la estructura `Simulacion` definida en el archivo `root.zig`:
 
 \begin{itemize}
-    \item \textbf{Entrada}: La función toma como entrada el estado actual del sistema, incluyendo las posiciones y velocidades de todas las partículas, así como el paso de tiempo.
+    \item \textbf{Parámetros de Simulación}: La estructura `Simulacion` encapsula los parámetros fundamentales de la simulación:
+    \begin{itemize}
+        \item \texttt{numero\_particulas}: Número total de partículas en el sistema.
+        \item \texttt{numero\_dimensiones}: Dimensionalidad del espacio de simulación (típicamente 2D o 3D).
+        \item \texttt{estrategia\_inicializacion}: Método para inicializar las posiciones de las partículas.
+        \item \texttt{iteraciones\_max}: Número máximo de pasos de simulación a ejecutar.
+    \end{itemize}
 
-    \item \textbf{Cálculo de Fuerzas}: Antes de actualizar las posiciones, se calcula la fuerza neta sobre cada partícula utilizando el módulo de cálculo de fuerzas.
+    \item \textbf{Inicialización}: Se implementa un método \texttt{init} para crear y configurar una instancia de `Simulacion` con los parámetros especificados.
 
-    \item \textbf{Actualización de Posiciones}: Se implementó la ecuación de Verlet para actualizar las posiciones de las partículas, utilizando las posiciones actuales, las posiciones previas, y las aceleraciones calculadas.
-
-    \item \textbf{Actualización de Velocidades}: Aunque el algoritmo de Verlet básico no calcula explícitamente las velocidades, se incluyó un paso adicional para estimarlas, lo cual es útil para el análisis del sistema.
-
-    \item \textbf{Aplicación de Condiciones de Contorno}: Después de actualizar las posiciones, se aplican las condiciones de contorno periódicas para mantener todas las partículas dentro de la caja de simulación.
-
-    \item \textbf{Salida}: La función devuelve el nuevo estado del sistema, con las posiciones y velocidades actualizadas.
+    \item \textbf{Ejecución de la Simulación}: El método \texttt{correr} está diseñado para ejecutar la simulación, aunque actualmente solo imprime un mensaje de depuración.
 \end{itemize}
 
-Este diseño modular permite una fácil modificación y extensión del código, facilitando la experimentación con diferentes parámetros y condiciones de simulación. Además, se implementaron funciones auxiliares para inicializar el sistema, recopilar estadísticas durante la simulación, y exportar los resultados para su posterior análisis y visualización.
+\subsection*{Estrategias de Inicialización}
+Se ha definido un tipo enumerado `EstrategiaInicializacion` que permite elegir entre diferentes métodos para inicializar las posiciones de las partículas:
 
-La implementación se realizó en el lenguaje de programación Zig, aprovechando sus características de rendimiento y seguridad para optimizar la eficiencia computacional de la simulación.
+\begin{itemize}
+    \item \texttt{al\_azar}: Distribuye las partículas aleatoriamente en el espacio de simulación.
+    \item \texttt{esquina}: Posiciona todas las partículas en una esquina del espacio de simulación.
+\end{itemize}
+
+Esta flexibilidad en la inicialización permite estudiar cómo diferentes configuraciones iniciales afectan la evolución del sistema coloidal.
+
+\subsection*{Implementación del Algoritmo de Verlet}
+Aunque la implementación actual del método \texttt{correr} es un placeholder, se planea expandirlo para incluir el algoritmo de Verlet. La implementación en Zig seguirá estos pasos:
+
+\begin{enumerate}
+    \item \textbf{Inicialización}:
+    \begin{itemize}
+        \item Crear arreglos para almacenar posiciones, velocidades y fuerzas de las partículas.
+        \item Inicializar posiciones según la estrategia seleccionada.
+        \item Inicializar velocidades (posiblemente a cero o con una distribución Maxwell-Boltzmann).
+    \end{itemize}
+
+    \item \textbf{Bucle Principal de Simulación}:
+    \begin{itemize}
+        \item Implementar un bucle que itere \texttt{iteraciones\_max} veces.
+        \item En cada iteración, aplicar el algoritmo de Verlet:
+        \begin{enumerate}
+            \item Calcular fuerzas entre partículas (potencial Lennard-Jones).
+            \item Actualizar posiciones usando la ecuación de Verlet.
+            \item Aplicar condiciones de contorno (por ejemplo, condiciones periódicas).
+            \item Actualizar velocidades (si se implementa Velocity Verlet).
+            \item Recolectar datos para análisis (energía, temperatura, etc.).
+        \end{enumerate}
+    \end{itemize}
+
+    \item \textbf{Cálculo de Fuerzas}:
+    \begin{itemize}
+        \item Implementar una función para calcular el potencial de Lennard-Jones.
+        \item Utilizar este potencial para calcular las fuerzas entre pares de partículas.
+    \end{itemize}
+
+    \item \textbf{Optimización}:
+    \begin{itemize}
+        \item Implementar técnicas de optimización como listas de vecinos o métodos de corte.
+        \item Utilizar las capacidades de Zig para paralelización y optimización de bajo nivel.
+    \end{itemize}
+\end{enumerate}
+
+\subsection*{Gestión de Memoria y Rendimiento}
+Aprovechando las características de Zig:
+
+\begin{itemize}
+    \item Utilizar allocators personalizados para un control preciso de la asignación de memoria.
+    \item Implementar estructuras de datos eficientes para almacenar y acceder a la información de las partículas.
+    \item Usar comptime y metaprogramación para optimizar cálculos en tiempo de compilación cuando sea posible.
+\end{itemize}
+
+\subsection*{Pruebas y Validación}
+Se han implementado pruebas unitarias utilizando el módulo de testing de Zig para verificar la correcta inicialización de la estructura `Simulacion`. En fases futuras, se expandirán estas pruebas para incluir:
+
+\begin{itemize}
+    \item Validación de la conservación de energía en sistemas aislados.
+    \item Comparación con resultados analíticos conocidos para sistemas simples.
+    \item Verificación de la estabilidad numérica a largo plazo.
+    \item Pruebas de rendimiento para evaluar la eficiencia de la implementación.
+\end{itemize}
+
+Esta metodología proporciona una base sólida para la implementación del algoritmo de Verlet en la simulación de sistemas coloidales en Zig, permitiendo una fácil extensión y modificación del código para experimentar con diferentes parámetros y condiciones de simulación.
 
 \section{Resultados}
 % Presentación de los resultados obtenidos
@@ -132,7 +297,7 @@ La implementación se realizó en el lenguaje de programación Zig, aprovechando
 % Conclusiones del estudio
 
 \begin{thebibliography}{9}
-\bibitem{verlet_wiki} Wikipedia contributors. (2023). Verlet integration. In Wikipedia, The Free Encyclopedia. Retrieved [insert access date], from \url{https://en.wikipedia.org/wiki/Verlet_integration}
+\bibitem{verlet_wiki} Wikipedia contributors. (2023). Verlet integration. In Wikipedia, The Free Encyclopedia. Retrieved [November, 2024], from \url{https://en.wikipedia.org/wiki/Verlet_integration}
 \end{thebibliography}
 
 \end{document}
