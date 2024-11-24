@@ -1,6 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
 
+const Vec3 = struct { x: f32, y: f32, z: f32 };
+
 pub const EstratIniPosicion = enum { al_azar, esquina };
 
 pub const EstratIniVelocidad = enum { cero, al_azar };
@@ -37,6 +39,39 @@ pub fn fuerzaLJ(sigma: f32, epsilon: f32, r: f32) f32 {
     return 24.0 * epsilon * (2.0 * sigma_r_12 - sigma_r_6) / r;
 }
 
+fn calcularFuerzaLJEn(i: u32, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
+    var fx: f32 = 0;
+    var fy: f32 = 0;
+    var fz: f32 = 0;
+
+    const xi = estado.x[i];
+    const yi = estado.y[i];
+    const zi = if (estado.z) |z| z[i] else 0;
+
+    for (estado.x, estado.y, 0..) |xj, yj, j| {
+        if (i == j) continue; // Skip self-interaction
+
+        const dx = xj - xi;
+        const dy = yj - yi;
+        const dz = if (estado.z) |z| z[j] - zi else 0;
+
+        const r_squared = dx * dx + dy * dy + dz * dz;
+        const r = @sqrt(r_squared);
+
+        const force_magnitude = fuerzaLJ(sigma, epsilon, r);
+
+        // Calculate force components
+        const force_factor = force_magnitude / r;
+        fx += force_factor * dx;
+        fy += force_factor * dy;
+        if (estado.z != null) {
+            fz += force_factor * dz;
+        }
+    }
+
+    return Vec3{ .x = fx, .y = fy, .z = fz };
+}
+
 pub const Simulacion = struct {
     estados: []Estado,
     lado: u32,
@@ -71,8 +106,6 @@ pub const Simulacion = struct {
         // Create the estados list with iteraciones_max length
         var estados = try allocator.alloc(Estado, iteraciones_max);
         estados[0] = estado_inicial;
-
-        // The rest of the estados will be filled during the simulation
 
         return Self{
             .estados = estados,
@@ -147,6 +180,7 @@ pub const Simulacion = struct {
             }
         }
     }
+    
 
     pub fn correr(self: *Self) void {
         std.debug.print("Ejecutando simulación con {} partículas.\n", .{self.estados.len});
@@ -259,4 +293,56 @@ test "fuerzaLJ - Force at equilibrium distance" {
     const r: f32 = std.math.pow(f32, 2.0, 1.0/6.0) * sigma; // equilibrium distance
     const force = fuerzaLJ(sigma, epsilon, r);
     try testing.expectApproxEqAbs(@as(f32, 0.0), force, 1e-6);
+}
+
+test "calcularFuerzaLJEn - Diagonal configuration" {
+    const allocator = std.testing.allocator;
+    const numero_particulas: u32 = 2;
+
+    // Allocate memory for positions and velocities
+    var x = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(x);
+    var y = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(y);
+    var z = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(z);
+    var vx = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(vx);
+    var vy = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(vy);
+    var vz = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(vz);
+
+    // Initialize positions and velocities
+    x[0] = 0.0; x[1] = 1.0;
+    y[0] = 0.0; y[1] = 1.0;
+    z[0] = 0.0; z[1] = 1.0;
+    vx[0] = 0.0; vx[1] = 0.0;
+    vy[0] = 0.0; vy[1] = 0.0;
+    vz[0] = 0.0; vz[1] = 0.0;
+
+    const estado = Estado.init(x, y, z, vx, vy, vz);
+    
+    // Test calcularFuerzaLJEn function
+    const epsilon: f32 = 1.0;
+    const sigma: f32 = 1.0;
+    
+    // Calculate forces for both particles
+    const fuerza0 = calcularFuerzaLJEn(0, estado, sigma, epsilon);
+    const fuerza1 = calcularFuerzaLJEn(1, estado, sigma, epsilon);
+
+    // Expected force magnitude for particles at distance sqrt(3) with epsilon=1.0 and sigma=1.0
+    const r = std.math.sqrt(3.0);
+    const fuerza_esperada_magnitud = 24.0 * epsilon * (2.0 * std.math.pow(f32, sigma / r, 12.0) - std.math.pow(f32, sigma / r, 6.0)) / r;
+    const fuerza_esperada_componente = fuerza_esperada_magnitud / std.math.sqrt(3.0);
+
+    // Test force on particle 0
+    try testing.expectApproxEqAbs(fuerza0.x, fuerza_esperada_componente, 1e-6);
+    try testing.expectApproxEqAbs(fuerza0.y, fuerza_esperada_componente, 1e-6);
+    try testing.expectApproxEqAbs(fuerza0.z, fuerza_esperada_componente, 1e-6);
+
+    // Test force on particle 1 (should be equal and opposite)
+    try testing.expectApproxEqAbs(fuerza1.x, -fuerza_esperada_componente, 1e-6);
+    try testing.expectApproxEqAbs(fuerza1.y, -fuerza_esperada_componente, 1e-6);
+    try testing.expectApproxEqAbs(fuerza1.z, -fuerza_esperada_componente, 1e-6);
 }
