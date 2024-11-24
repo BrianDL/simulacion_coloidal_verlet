@@ -30,6 +30,21 @@ const Estado = struct {
             .vz = vz,
         };
     }
+    
+    fn deinit(self: *Estado, allocator: std.mem.Allocator) void {
+        
+        allocator.free(self.x);
+        allocator.free(self.y);
+        if (self.z) |z_slice| {
+            allocator.free(z_slice);
+        }
+
+        allocator.free(self.vx);
+        allocator.free(self.vy);
+        if (self.vz) |vz_slice| {
+            allocator.free(vz_slice);
+        }
+    }
 };
 
 pub fn fuerzaLJ(sigma: f32, epsilon: f32, r: f32) f32 {
@@ -39,7 +54,7 @@ pub fn fuerzaLJ(sigma: f32, epsilon: f32, r: f32) f32 {
     return 24.0 * epsilon * (2.0 * sigma_r_12 - sigma_r_6) / r;
 }
 
-fn calcularFuerzaLJEn(i: u32, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
+fn calcularFuerzaLJEn(i: usize, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
     var fx: f32 = 0;
     var fy: f32 = 0;
     var fz: f32 = 0;
@@ -51,14 +66,17 @@ fn calcularFuerzaLJEn(i: u32, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
     for (estado.x, estado.y, 0..) |xj, yj, j| {
         if (i == j) continue; // Skip self-interaction
 
-        const dx = xj - xi;
-        const dy = yj - yi;
-        const dz = if (estado.z) |z| z[j] - zi else 0;
+        const dx = xi - xj;
+        const dy = yi - yj;
+        const dz = if (estado.z) |z| zi - z[j] else 0;
 
         const r_squared = dx * dx + dy * dy + dz * dz;
         const r = @sqrt(r_squared);
+        // std.debug.print("R: {any}\n", .{r});
 
         const force_magnitude = fuerzaLJ(sigma, epsilon, r);
+        // std.debug.print("SIGMA_EPSILON: {any}, {any}\n", .{sigma, epsilon});
+        // std.debug.print("FORCE_MAGNITUD: {any}\n", .{force_magnitude});
 
         // Calculate force components
         const force_factor = force_magnitude / r;
@@ -70,6 +88,102 @@ fn calcularFuerzaLJEn(i: u32, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
     }
 
     return Vec3{ .x = fx, .y = fy, .z = fz };
+}
+
+fn pasoVerlet(
+    estado: Estado, 
+    lado: f32,
+    dt_param: ?f32,
+    sigma_param: ?f32,
+    epsilon_param: ?f32, 
+    allocator: std.mem.Allocator,
+    current_forces: ?[]Vec3
+) !Estado {
+    const dt = dt_param orelse 0.01;
+    const sigma = sigma_param orelse 1.0;
+    const epsilon = epsilon_param orelse 1.0;
+
+    const n = estado.x.len;
+
+    var nuevo_x = try allocator.alloc(f32, n);
+    errdefer allocator.free(nuevo_x);
+    var nuevo_y = try allocator.alloc(f32, n);
+    errdefer allocator.free(nuevo_y);
+    var nuevo_z = try allocator.alloc(f32, n);
+    errdefer allocator.free(nuevo_z);
+    var nuevo_vx = try allocator.alloc(f32, n);
+    errdefer allocator.free(nuevo_vx);
+    var nuevo_vy = try allocator.alloc(f32, n);
+    errdefer allocator.free(nuevo_vy);
+    var nuevo_vz = try allocator.alloc(f32, n);
+    errdefer allocator.free(nuevo_vz);
+
+    var fuerzas = try allocator.alloc(Vec3, n);
+    defer allocator.free(fuerzas);
+
+    // Use memoized forces if available, otherwise calculate
+    if (current_forces) |forces| {
+        std.mem.copyForwards(Vec3, fuerzas, forces);
+    } else {
+        for (0..n) |i| {
+            fuerzas[i] = calcularFuerzaLJEn(i, estado, sigma, epsilon);
+        }
+        
+        // std.debug.print("\nFUERZAS: {any}\n", .{fuerzas});
+    }
+    
+
+    // Update positions and calculate half-step velocities
+    for (0..n) |i| {
+        const fuerza = fuerzas[i];
+        
+        // Calculate new positions
+        var nuevo_x_temp = estado.x[i] + estado.vx[i] * dt + 0.5 * fuerza.x * dt * dt;
+        var nuevo_y_temp = estado.y[i] + estado.vy[i] * dt + 0.5 * fuerza.y * dt * dt;
+        var nuevo_z_temp = estado.z.?[i] + estado.vz.?[i] * dt + 0.5 * fuerza.z * dt * dt;
+
+        // Check for boundary collisions and apply elastic reflection
+        if (nuevo_x_temp >= lado or nuevo_x_temp <= 0) {
+            nuevo_x_temp = estado.x[i];
+            nuevo_vx[i] = -(estado.vx[i] + 0.5 * fuerza.x * dt);
+        } else {
+            nuevo_vx[i] = estado.vx[i] + 0.5 * fuerza.x * dt;
+        }
+
+        if (nuevo_y_temp >= lado or nuevo_y_temp <= 0) {
+            nuevo_y_temp = estado.y[i];
+            nuevo_vy[i] = -(estado.vy[i] + 0.5 * fuerza.y * dt);
+        } else {
+            nuevo_vy[i] = estado.vy[i] + 0.5 * fuerza.y * dt;
+        }
+
+        if (nuevo_z_temp >= lado or nuevo_z_temp <= 0) {
+            nuevo_z_temp = estado.z.?[i];
+            nuevo_vz[i] = -(estado.vz.?[i] + 0.5 * fuerza.z * dt);
+        } else {
+            nuevo_vz[i] = estado.vz.?[i] + 0.5 * fuerza.z * dt;
+        }
+
+        nuevo_x[i] = nuevo_x_temp;
+        nuevo_y[i] = nuevo_y_temp;
+        nuevo_z[i] = nuevo_z_temp;
+    }
+
+    // Calculate new forces and update velocities
+    for (0..n) |i| {
+        const nueva_fuerza = calcularFuerzaLJEn(i, Estado.init(nuevo_x, nuevo_y, nuevo_z, nuevo_vx, nuevo_vy, nuevo_vz), sigma, epsilon);
+        
+        nuevo_vx[i] += 0.5 * nueva_fuerza.x * dt;
+        nuevo_vy[i] += 0.5 * nueva_fuerza.y * dt;
+        nuevo_vz[i] += 0.5 * nueva_fuerza.z * dt;
+
+        // Update forces for the next iteration if memoization is being used
+        if (current_forces) |forces| {
+            forces[i] = nueva_fuerza;
+        }
+    }
+
+    return Estado.init(nuevo_x, nuevo_y, nuevo_z, nuevo_vx, nuevo_vy, nuevo_vz);
 }
 
 pub const Simulacion = struct {
@@ -118,13 +232,14 @@ pub const Simulacion = struct {
 
     pub fn deinit(self: *Self) void {
         // Free the memory for the first state (which we initialized)
-        self.allocator.free(self.estados[0].x);
-        self.allocator.free(self.estados[0].y);
-        if (self.estados[0].z) |z| self.allocator.free(z);
+        self.estados[0].deinit(self.allocator);
+        // self.allocator.free(self.estados[0].x);
+        // self.allocator.free(self.estados[0].y);
+        // if (self.estados[0].z) |z| self.allocator.free(z);
 
-        self.allocator.free(self.estados[0].vx);
-        self.allocator.free(self.estados[0].vy);
-        if (self.estados[0].vz) |vz| self.allocator.free(vz);
+        // self.allocator.free(self.estados[0].vx);
+        // self.allocator.free(self.estados[0].vy);
+        // if (self.estados[0].vz) |vz| self.allocator.free(vz);
 
         // Free the estados array itself
         self.allocator.free(self.estados);
@@ -333,7 +448,7 @@ test "calcularFuerzaLJEn - Diagonal configuration" {
 
     // Expected force magnitude for particles at distance sqrt(3) with epsilon=1.0 and sigma=1.0
     const r = std.math.sqrt(3.0);
-    const fuerza_esperada_magnitud = 24.0 * epsilon * (2.0 * std.math.pow(f32, sigma / r, 12.0) - std.math.pow(f32, sigma / r, 6.0)) / r;
+    const fuerza_esperada_magnitud = -24.0 * epsilon * (2.0 * std.math.pow(f32, sigma / r, 12.0) - std.math.pow(f32, sigma / r, 6.0)) / r;
     const fuerza_esperada_componente = fuerza_esperada_magnitud / std.math.sqrt(3.0);
 
     // Test force on particle 0
@@ -345,4 +460,192 @@ test "calcularFuerzaLJEn - Diagonal configuration" {
     try testing.expectApproxEqAbs(fuerza1.x, -fuerza_esperada_componente, 1e-6);
     try testing.expectApproxEqAbs(fuerza1.y, -fuerza_esperada_componente, 1e-6);
     try testing.expectApproxEqAbs(fuerza1.z, -fuerza_esperada_componente, 1e-6);
+}
+
+test "calcularFuerzaLJEn - Repulsive force at close distance" {
+    const allocator = std.testing.allocator;
+    const numero_particulas: u32 = 2;
+
+    // Allocate memory for positions and velocities
+    var x = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(x);
+    var y = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(y);
+    var z = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(z);
+    var vx = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(vx);
+    var vy = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(vy);
+    var vz = try allocator.alloc(f32, numero_particulas);
+    defer allocator.free(vz);
+
+    // Initialize positions and velocities
+    x[0] = 0.0; x[1] = 0.8; // Particles are closer than sigma
+    y[0] = 0.0; y[1] = 0.0;
+    z[0] = 0.0; z[1] = 0.0;
+    vx[0] = 0.0; vx[1] = 0.0;
+    vy[0] = 0.0; vy[1] = 0.0;
+    vz[0] = 0.0; vz[1] = 0.0;
+
+    const estado = Estado.init(x, y, z, vx, vy, vz);
+    
+    // Test calcularFuerzaLJEn function
+    const epsilon: f32 = 1.0;
+    const sigma: f32 = 1.0;
+    
+    // Calculate forces for both particles
+    const fuerza0 = calcularFuerzaLJEn(0, estado, sigma, epsilon);
+    const fuerza1 = calcularFuerzaLJEn(1, estado, sigma, epsilon);
+    
+    
+    // Expected force magnitude for particles at distance 0.8 with epsilon=1.0 and sigma=1.0
+    const r = 0.8;
+    const fuerza_esperada_magnitud = 24.0 * epsilon * (2.0 * std.math.pow(f32, sigma / r, 12.0) - std.math.pow(f32, sigma / r, 6.0)) / r;
+
+    // Test force on particle 0 (should be positive, pushing it away)
+    try testing.expect(fuerza0.x < 0);
+    try testing.expectApproxEqAbs(fuerza0.x, -fuerza_esperada_magnitud, 1e-6);
+    try testing.expectApproxEqAbs(fuerza0.y, 0, 1e-6);
+    try testing.expectApproxEqAbs(fuerza0.z, 0, 1e-6);
+
+    // Test force on particle 1 (should be equal and opposite)
+    try testing.expect(fuerza1.x > 0);
+    try testing.expectApproxEqAbs(fuerza1.x, fuerza_esperada_magnitud, 1e-6);
+    try testing.expectApproxEqAbs(fuerza1.y, 0, 1e-6);
+    try testing.expectApproxEqAbs(fuerza1.z, 0, 1e-6);
+}
+
+test "pasoVerlet - Single particle, no forces" {
+    const allocator = std.testing.allocator;
+    const dt: f32 = 0.01;
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+    const lado: f32 = 10.0;
+
+    var x = try allocator.alloc(f32, 1);
+    defer allocator.free(x);
+    var y = try allocator.alloc(f32, 1);
+    defer allocator.free(y);
+    var z = try allocator.alloc(f32, 1);
+    defer allocator.free(z);
+    var vx = try allocator.alloc(f32, 1);
+    defer allocator.free(vx);
+    var vy = try allocator.alloc(f32, 1);
+    defer allocator.free(vy);
+    var vz = try allocator.alloc(f32, 1);
+    defer allocator.free(vz);
+
+    x[0] = 1.0; y[0] = 1.0; z[0] = 1.0;
+    vx[0] = 1.0; vy[0] = 1.0; vz[0] = 1.0;
+
+    const estado_inicial = Estado.init(x, y, z, vx, vy, vz);
+    
+    var estado_final = try pasoVerlet(estado_inicial, lado, dt, sigma, epsilon, allocator, null);
+    defer estado_final.deinit(allocator);
+
+    // Expected positions after dt
+    const expected_pos = 1.0 + 1.0 * dt + 0.5 * 0.0 * dt * dt;
+    // Expected velocities after dt (no forces, so they remain the same)
+    const expected_vel = 1.0;
+
+    try testing.expectApproxEqAbs(expected_pos, estado_final.x[0], 1e-6);
+    try testing.expectApproxEqAbs(expected_pos, estado_final.y[0], 1e-6);
+    
+    const z_val = estado_final.z orelse unreachable;
+    try testing.expectApproxEqAbs(expected_pos, z_val[0], 1e-6);
+    
+    try testing.expectApproxEqAbs(expected_vel, estado_final.vx[0], 1e-6);
+    try testing.expectApproxEqAbs(expected_vel, estado_final.vy[0], 1e-6);
+    
+    const vz_val = estado_final.vz orelse unreachable;
+    try testing.expectApproxEqAbs(expected_vel, vz_val[0], 1e-6);
+}
+
+test "pasoVerlet - Two particles, with forces" {
+    const allocator = std.testing.allocator;
+    const dt: f32 = 0.01;
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+    const lado: f32 = 10.0;
+
+    var x = try allocator.alloc(f32, 2);
+    defer allocator.free(x);
+    var y = try allocator.alloc(f32, 2);
+    defer allocator.free(y);
+    var z = try allocator.alloc(f32, 2);
+    defer allocator.free(z);
+    var vx = try allocator.alloc(f32, 2);
+    defer allocator.free(vx);
+    var vy = try allocator.alloc(f32, 2);
+    defer allocator.free(vy);
+    var vz = try allocator.alloc(f32, 2);
+    defer allocator.free(vz);
+
+    x[0] = 1.0; x[1] = 1.0 + 0.9 * sigma;
+    y[0] = 0.0; y[1] = 0.0;
+    z[0] = 0.0; z[1] = 0.0;
+    vx[0] = 0.0; vx[1] = 0.0;
+    vy[0] = 0.0; vy[1] = 0.0;
+    vz[0] = 0.0; vz[1] = 0.0;
+
+    const estado_inicial = Estado.init(x, y, z, vx, vy, vz);
+    
+    var estado_final = try pasoVerlet(estado_inicial, lado, dt, sigma, epsilon, allocator, null);
+    defer estado_final.deinit(allocator);
+
+    // Particles should move away from each other due to repulsive force
+    try testing.expect(estado_final.x[0] < 1.0);
+    try testing.expect(estado_final.x[1] > 1.0 + 0.9 * sigma);
+    try testing.expectApproxEqAbs(0.0, estado_final.y[0], 1e-6);
+    try testing.expectApproxEqAbs(0.0, estado_final.y[1], 1e-6);
+
+    const z_val = estado_final.z orelse unreachable;
+    try testing.expectApproxEqAbs(0.0, z_val[0], 1e-6);
+    try testing.expectApproxEqAbs(0.0, z_val[1], 1e-6);
+}
+
+test "pasoVerlet - Memoization" {
+    const allocator = std.testing.allocator;
+    const dt: f32 = 0.01;
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+    const lado: f32 = 10.0;
+
+    var x = try allocator.alloc(f32, 2);
+    defer allocator.free(x);
+    var y = try allocator.alloc(f32, 2);
+    defer allocator.free(y);
+    var z = try allocator.alloc(f32, 2);
+    defer allocator.free(z);
+    var vx = try allocator.alloc(f32, 2);
+    defer allocator.free(vx);
+    var vy = try allocator.alloc(f32, 2);
+    defer allocator.free(vy);
+    var vz = try allocator.alloc(f32, 2);
+    defer allocator.free(vz);
+
+    x[0] = 0.0; x[1] = 1.0;
+    y[0] = 0.0; y[1] = 0.0;
+    z[0] = 0.0; z[1] = 0.0;
+    vx[0] = 0.0; vx[1] = 0.0;
+    vy[0] = 0.0; vy[1] = 0.0;
+    vz[0] = 0.0; vz[1] = 0.0;
+
+    const estado_inicial = Estado.init(x, y, z, vx, vy, vz);
+    
+    var current_forces = try allocator.alloc(Vec3, 2);
+    defer allocator.free(current_forces);
+    current_forces[0] = Vec3{ .x = 1.0, .y = 0.0, .z = 0.0 };
+    current_forces[1] = Vec3{ .x = -1.0, .y = 0.0, .z = 0.0 };
+
+    var estado_final = try pasoVerlet(estado_inicial, lado, dt, sigma, epsilon, allocator, current_forces);
+    defer estado_final.deinit(allocator);
+
+    // Check if the memoized forces were used
+    const expected_pos_0 = 0.0 + 0.0 * dt + 0.5 * (1.0 / 1.0) * dt * dt;
+    const expected_pos_1 = 1.0 + 0.0 * dt + 0.5 * (-1.0 / 1.0) * dt * dt;
+
+    try testing.expectApproxEqAbs(expected_pos_0, estado_final.x[0], 1e-6);
+    try testing.expectApproxEqAbs(expected_pos_1, estado_final.x[1], 1e-6);
 }
