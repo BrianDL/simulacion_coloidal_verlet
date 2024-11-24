@@ -30,6 +30,13 @@ const Estado = struct {
     }
 };
 
+pub fn fuerzaLJ(sigma: f32, epsilon: f32, r: f32) f32 {
+    const sigma_r = sigma / r;
+    const sigma_r_6 = std.math.pow(f32, sigma_r, 6);
+    const sigma_r_12 = sigma_r_6 * sigma_r_6;
+    return 24.0 * epsilon * (2.0 * sigma_r_12 - sigma_r_6) / r;
+}
+
 pub const Simulacion = struct {
     estados: []Estado,
     lado: u32,
@@ -220,4 +227,36 @@ test "inicializarVelocidadAlAzar" {
         try testing.expect(vy >= -velocidad_max and vy <= velocidad_max);
         try testing.expect(vz >= -velocidad_max and vz <= velocidad_max);
     }
+}
+
+test "fuerzaLJ - Repulsive force at short distance" {
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+    const r: f32 = 0.9 * sigma;
+    const force = fuerzaLJ(sigma, epsilon, r);
+    try testing.expect(force > 0);
+}
+
+test "fuerzaLJ - Attractive force at medium distance" {
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+    const r: f32 = 1.5 * sigma;
+    const force = fuerzaLJ(sigma, epsilon, r);
+    try testing.expect(force < 0);
+}
+
+test "fuerzaLJ - Force approaches zero at large distance" {
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+    const r: f32 = 1000.0 * sigma;
+    const force = fuerzaLJ(sigma, epsilon, r);
+    try testing.expectApproxEqAbs(@as(f32, 0.0), force, 1e-6);
+}
+
+test "fuerzaLJ - Force at equilibrium distance" {
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+    const r: f32 = std.math.pow(f32, 2.0, 1.0/6.0) * sigma; // equilibrium distance
+    const force = fuerzaLJ(sigma, epsilon, r);
+    try testing.expectApproxEqAbs(@as(f32, 0.0), force, 1e-6);
 }
