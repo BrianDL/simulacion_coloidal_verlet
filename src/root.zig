@@ -128,8 +128,6 @@ fn pasoVerlet(
         for (0..n) |i| {
             fuerzas[i] = calcularFuerzaLJEn(i, estado, sigma, epsilon);
         }
-        
-        // std.debug.print("\nFUERZAS: {any}\n", .{fuerzas});
     }
     
 
@@ -189,13 +187,25 @@ fn pasoVerlet(
 pub const Simulacion = struct {
     estados: []Estado,
     lado: u32,
-    estrategia_inicializacion: EstrategiaInicializacion,
+    epsilon:f32,
+    sigma:f32,
+    dt:f32,
     iteraciones_max: u32,
     allocator: std.mem.Allocator,
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, numero_particulas: u32, numero_dimensiones: u32, lado: u32, estrategia_inicializacion: EstrategiaInicializacion, iteraciones_max: u32) !Self {
+    pub fn init(
+            numero_particulas: u32, numero_dimensiones: u32
+            , lado: u32, estrategia_inicializacion: EstrategiaInicializacion
+            , iteraciones_max: u32, allocator: std.mem.Allocator
+            , epsilon_param:?f32, sigma_param:?f32, dt_param:?f32
+        ) !Self {
+        
+        const epsilon = epsilon_param orelse 1.0;
+        const sigma = sigma_param orelse 1.0;
+        const dt = dt_param orelse 0.001;
+        
         const x = try allocator.alloc(f32, numero_particulas);
         const y = try allocator.alloc(f32, numero_particulas);
         const z = if (numero_dimensiones == 3) try allocator.alloc(f32, numero_particulas) else null;
@@ -224,7 +234,9 @@ pub const Simulacion = struct {
         return Self{
             .estados = estados,
             .lado = lado,
-            .estrategia_inicializacion = estrategia_inicializacion,
+            .epsilon = epsilon,
+            .sigma = sigma,
+            .dt = dt,
             .iteraciones_max = iteraciones_max,
             .allocator = allocator,
         };
@@ -291,24 +303,21 @@ pub const Simulacion = struct {
     pub fn correr(self: *Self) !void {
         std.debug.print("Ejecutando simulación con {} partículas por {} iteraciones.\n", .{self.estados[0].x.len, self.iteraciones_max});
 
-        const sigma: f32 = 1.0;  // You might want to make these parameters of Simulacion
-        const epsilon: f32 = 1.0;
-        const dt: f32 = 0.01;  // Time step, you might want to make this a parameter too
-
         // Allocate memory for memoized forces
         var current_forces = try self.allocator.alloc(Vec3, self.estados[0].x.len);
         defer self.allocator.free(current_forces);
 
         // Initialize forces for the first iteration
         for (0..self.estados[0].x.len) |i| {
-            current_forces[i] = calcularFuerzaLJEn(i, self.estados[0], sigma, epsilon);
+            current_forces[i] = calcularFuerzaLJEn(
+                    i, self.estados[0], self.sigma, self.epsilon);
         }
         
         for (1..self.iteraciones_max) |i| {
             const estado_actual = self.estados[i - 1];
             const nuevo_estado = try pasoVerlet(
                 estado_actual, self.lado,
-                dt, sigma, epsilon,
+                self.dt, self.sigma, self.epsilon,
                 self.allocator,
                 current_forces
             );
@@ -333,7 +342,13 @@ test "inicializarPosicionAlAzar" {
     const lado: u32 = 10;
     const iteraciones_max: u32 = 1;
 
-    var sim = try Simulacion.init(allocator, numero_particulas, numero_dimensiones, lado, EstrategiaInicializacion{ .posicion = .al_azar, .velocidad = .cero }, iteraciones_max);
+    var sim = try Simulacion.init(
+        numero_particulas, numero_dimensiones
+        , lado, EstrategiaInicializacion{ 
+            .posicion = .al_azar
+            , .velocidad = .cero }
+        , iteraciones_max
+        , allocator, null, null, null);
     defer sim.deinit();
 
     const estado = sim.estados[0];
@@ -351,7 +366,13 @@ test "inicializarPosicionEsquina" {
     const lado: u32 = 10;
     const iteraciones_max: u32 = 1;
 
-    var sim = try Simulacion.init(allocator, numero_particulas, numero_dimensiones, lado, EstrategiaInicializacion{ .posicion = .esquina, .velocidad = .cero }, iteraciones_max);
+    var sim = try Simulacion.init(
+        numero_particulas, numero_dimensiones
+        , lado, EstrategiaInicializacion{ 
+            .posicion = .esquina
+            , .velocidad = .cero }
+        , iteraciones_max
+        , allocator, null, null, null);
     defer sim.deinit();
 
     const estado = sim.estados[0];
@@ -369,7 +390,13 @@ test "inicializarVelocidadCero" {
     const lado: u32 = 10;
     const iteraciones_max: u32 = 1;
 
-    var sim = try Simulacion.init(allocator, numero_particulas, numero_dimensiones, lado, EstrategiaInicializacion{ .posicion = .al_azar, .velocidad = .cero }, iteraciones_max);
+    var sim = try Simulacion.init(
+        numero_particulas, numero_dimensiones
+        , lado, EstrategiaInicializacion{ 
+            .posicion = .al_azar
+            , .velocidad = .cero }
+        , iteraciones_max
+        , allocator, null, null, null);
     defer sim.deinit();
 
     const estado = sim.estados[0];
@@ -388,7 +415,13 @@ test "inicializarVelocidadAlAzar" {
     const iteraciones_max: u32 = 1;
     const velocidad_max: f32 = 1.0;
 
-    var sim = try Simulacion.init(allocator, numero_particulas, numero_dimensiones, lado, EstrategiaInicializacion{ .posicion = .al_azar, .velocidad = .al_azar }, iteraciones_max);
+    var sim = try Simulacion.init(
+        numero_particulas, numero_dimensiones
+        , lado, EstrategiaInicializacion{ 
+            .posicion = .al_azar
+            , .velocidad = .al_azar }
+        , iteraciones_max
+        , allocator, null, null, null);
     defer sim.deinit();
 
     const estado = sim.estados[0];
