@@ -231,17 +231,9 @@ pub const Simulacion = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        // Free the memory for the first state (which we initialized)
-        self.estados[0].deinit(self.allocator);
-        // self.allocator.free(self.estados[0].x);
-        // self.allocator.free(self.estados[0].y);
-        // if (self.estados[0].z) |z| self.allocator.free(z);
-
-        // self.allocator.free(self.estados[0].vx);
-        // self.allocator.free(self.estados[0].vy);
-        // if (self.estados[0].vz) |vz| self.allocator.free(vz);
-
-        // Free the estados array itself
+        for (0..self.estados.len) |i| {
+            self.estados[i].deinit(self.allocator);
+        }
         self.allocator.free(self.estados);
     }
 
@@ -296,10 +288,39 @@ pub const Simulacion = struct {
         }
     }
     
+    pub fn correr(self: *Self) !void {
+        std.debug.print("Ejecutando simulación con {} partículas por {} iteraciones.\n", .{self.estados[0].x.len, self.iteraciones_max});
 
-    pub fn correr(self: *Self) void {
-        std.debug.print("Ejecutando simulación con {} partículas.\n", .{self.estados.len});
-        // Aquí iría la lógica de la simulación
+        const sigma: f32 = 1.0;  // You might want to make these parameters of Simulacion
+        const epsilon: f32 = 1.0;
+        const dt: f32 = 0.01;  // Time step, you might want to make this a parameter too
+
+        // Allocate memory for memoized forces
+        var current_forces = try self.allocator.alloc(Vec3, self.estados[0].x.len);
+        defer self.allocator.free(current_forces);
+
+        // Initialize forces for the first iteration
+        for (0..self.estados[0].x.len) |i| {
+            current_forces[i] = calcularFuerzaLJEn(i, self.estados[0], sigma, epsilon);
+        }
+        
+        for (1..self.iteraciones_max) |i| {
+            const estado_actual = self.estados[i - 1];
+            const nuevo_estado = try pasoVerlet(
+                estado_actual, self.lado,
+                dt, sigma, epsilon,
+                self.allocator,
+                current_forces
+            );
+            self.estados[i] = nuevo_estado;
+
+            // You could add some periodic output here, e.g.:
+            if (i % 100 == 0) {
+                std.debug.print("Completed iteration {}/{}\n", .{i, self.iteraciones_max});
+            }
+        }
+
+        std.debug.print("Simulación completada.\n", .{});
     }
 };
 
