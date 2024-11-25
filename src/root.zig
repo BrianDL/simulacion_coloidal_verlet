@@ -66,15 +66,29 @@ fn calcularFuerzaLJEn(i: usize, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
     for (estado.x, estado.y, 0..) |xj, yj, j| {
         if (i == j) continue; // Skip self-interaction
 
-        const dx = xi - xj;
-        const dy = yi - yj;
-        const dz = if (estado.z) |z| zi - z[j] else 0;
+        const sign: f32 = if (j > i) 1.0 else -1.0;
 
-        const r_squared = dx * dx + dy * dy + dz * dz;
-        const r = @sqrt(r_squared);
+        var dx = xi - xj;
+        var dy = yi - yj;
+        var dz = if (estado.z) |z| zi - z[j] else 0;
+
+        var r_squared = dx * dx + dy * dy + dz * dz;
+        var r = @sqrt(r_squared);
         // std.debug.print("R: {any}\n", .{r});
 
-        const force_magnitude = fuerzaLJ(sigma, epsilon, r);
+        while (r < 1e-6) {
+            dx += sign * (1e-6);
+            dy += sign * (1e-6);
+            dz += if (estado.z) |_| sign * (1e-6) else 0;
+            
+
+            r_squared = dx*dx + dy*dy + dz*dz;
+            r = @sqrt(r_squared);
+        }
+
+        const force_magnitude = 
+            if (r > 3.0*sigma) 0.0 else fuerzaLJ(sigma, epsilon, r);
+
         // std.debug.print("SIGMA_EPSILON: {any}, {any}\n", .{sigma, epsilon});
         // std.debug.print("FORCE_MAGNITUD: {any}\n", .{force_magnitude});
 
@@ -141,25 +155,34 @@ fn pasoVerlet(
         var nuevo_z_temp = estado.z.?[i] + estado.vz.?[i] * dt + 0.5 * fuerza.z * dt * dt;
 
         // Check for boundary collisions and apply elastic reflection
-        if (nuevo_x_temp >= lado or nuevo_x_temp <= 0) {
+        var is_over_border :bool = 
+            nuevo_x_temp >= lado or nuevo_x_temp <= 0;
+
+        if (!is_over_border) {
+            nuevo_vx[i] = estado.vx[i] + 0.5 * fuerza.x * dt;
+        } else {
             nuevo_x_temp = estado.x[i];
             nuevo_vx[i] = -(estado.vx[i] + 0.5 * fuerza.x * dt);
-        } else {
-            nuevo_vx[i] = estado.vx[i] + 0.5 * fuerza.x * dt;
         }
 
-        if (nuevo_y_temp >= lado or nuevo_y_temp <= 0) {
+        is_over_border = 
+            nuevo_y_temp >= lado or nuevo_y_temp <= 0;
+            
+        if (!is_over_border) {
+            nuevo_vy[i] = estado.vy[i] + 0.5 * fuerza.y * dt;
+        } else {
             nuevo_y_temp = estado.y[i];
             nuevo_vy[i] = -(estado.vy[i] + 0.5 * fuerza.y * dt);
-        } else {
-            nuevo_vy[i] = estado.vy[i] + 0.5 * fuerza.y * dt;
         }
 
-        if (nuevo_z_temp >= lado or nuevo_z_temp <= 0) {
+        is_over_border = 
+            nuevo_z_temp >= lado or nuevo_z_temp <= 0;
+
+        if (!is_over_border) {
+            nuevo_vz[i] = estado.vz.?[i] + 0.5 * fuerza.z * dt;
+        } else {
             nuevo_z_temp = estado.z.?[i];
             nuevo_vz[i] = -(estado.vz.?[i] + 0.5 * fuerza.z * dt);
-        } else {
-            nuevo_vz[i] = estado.vz.?[i] + 0.5 * fuerza.z * dt;
         }
 
         nuevo_x[i] = nuevo_x_temp;
@@ -169,7 +192,12 @@ fn pasoVerlet(
 
     // Calculate new forces and update velocities
     for (0..n) |i| {
-        const nueva_fuerza = calcularFuerzaLJEn(i, Estado.init(nuevo_x, nuevo_y, nuevo_z, nuevo_vx, nuevo_vy, nuevo_vz), sigma, epsilon);
+        const nueva_fuerza = 
+            calcularFuerzaLJEn(
+                i
+                , Estado.init(nuevo_x, nuevo_y, nuevo_z, nuevo_vx, nuevo_vy, nuevo_vz)
+                , sigma, epsilon
+            );
         
         nuevo_vx[i] += 0.5 * nueva_fuerza.x * dt;
         nuevo_vy[i] += 0.5 * nueva_fuerza.y * dt;
@@ -557,7 +585,7 @@ test "calcularFuerzaLJEn - Repulsive force at close distance" {
     const r = 0.8;
     const fuerza_esperada_magnitud = 24.0 * epsilon * (2.0 * std.math.pow(f32, sigma / r, 12.0) - std.math.pow(f32, sigma / r, 6.0)) / r;
 
-    // Test force on particle 0 (should be positive, pushing it away)
+    // Test force on particle 0 (should be negative, pushing it away)
     try testing.expect(fuerza0.x < 0);
     try testing.expectApproxEqAbs(fuerza0.x, -fuerza_esperada_magnitud, 1e-6);
     try testing.expectApproxEqAbs(fuerza0.y, 0, 1e-6);
