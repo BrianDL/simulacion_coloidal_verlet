@@ -76,10 +76,10 @@ fn calcularFuerzaLJEn(i: usize, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
         var r = @sqrt(r_squared);
         // std.debug.print("R: {any}\n", .{r});
 
-        while (r < 1e-4) {
-            dx += sign * (1e-4);
-            dy += sign * (1e-4);
-            dz += if (estado.z) |_| sign * (1e-4) else 0;
+        while (r < 1e-3) {
+            dx = sign * (0.1);
+            dy = sign * (0.1);
+            dz = if (estado.z) |_| sign * (0.1) else 0;
             
 
             r_squared = dx*dx + dy*dy + dz*dz;
@@ -88,6 +88,17 @@ fn calcularFuerzaLJEn(i: usize, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
 
         const force_magnitude = 
             if (r > 3.0*sigma) 0.0 else fuerzaLJ(sigma, epsilon, r);
+        
+        // Add this check after calculating force_magnitude
+        if (std.math.isNan(force_magnitude)) {
+            std.debug.print("Warning: NaN force detected!\n", .{});
+            std.debug.print("  r: {d}, sigma: {d}, epsilon: {d}\n", .{r, sigma, epsilon});
+            std.debug.print("  dx: {d}, dy: {d}, dz: {d}\n", .{dx, dy, dz});
+            std.debug.print("  Particle indices: i={d}, j={d}\n", .{i, j});
+            std.debug.print("  Components {}, {} ; {}, {}; {}", .{xi, xj, yi,yj,zi});
+            // You might want to handle this case, e.g., by setting force to 0 or exiting
+            @panic("NaN force detected");
+        }
 
         // std.debug.print("SIGMA_EPSILON: {any}, {any}\n", .{sigma, epsilon});
         // std.debug.print("FORCE_MAGNITUD: {any}\n", .{force_magnitude});
@@ -153,6 +164,16 @@ fn pasoVerlet(
         var nuevo_x_temp = estado.x[i] + estado.vx[i] * dt + 0.5 * fuerza.x * dt * dt;
         var nuevo_y_temp = estado.y[i] + estado.vy[i] * dt + 0.5 * fuerza.y * dt * dt;
         var nuevo_z_temp = estado.z.?[i] + estado.vz.?[i] * dt + 0.5 * fuerza.z * dt * dt;
+        
+        // Add NaN check for nuevo_x_temp
+        if (std.math.isNan(nuevo_x_temp)) {
+            std.debug.print("Warning: NaN detected in nuevo_x_temp!\n", .{});
+            std.debug.print("Particle index: {d}\n", .{i});
+            std.debug.print("estado.x[i]: {d}, estado.vx[i]: {d}, fuerza.x: {d}, dt: {d}\n", .{estado.x[i], estado.vx[i], fuerza.x, dt});
+            std.debug.print("nuevo_y_temp: {d}, nuevo_z_temp: {d}\n", .{nuevo_y_temp, nuevo_z_temp});
+            std.debug.print("Full force vector: x: {d}, y: {d}, z: {d}\n", .{fuerza.x, fuerza.y, fuerza.z});
+            @panic("NaN detected in position update");
+        }
 
         // Check for boundary collisions and apply elastic reflection
         var is_over_border :bool = 
@@ -202,6 +223,14 @@ fn pasoVerlet(
         nuevo_vx[i] += 0.5 * nueva_fuerza.x * dt;
         nuevo_vy[i] += 0.5 * nueva_fuerza.y * dt;
         nuevo_vz[i] += 0.5 * nueva_fuerza.z * dt;
+
+        if (std.math.isNan(nuevo_vx[i])) {
+            std.debug.print("Warning: NaN detected in nuevo_vx[i]!\n", .{});
+            std.debug.print("Particle index: {d}\n", .{i});
+            std.debug.print("Previous vx: {d}, nueva_fuerza.x: {d}, dt: {d}\n", .{nuevo_vx[i], nueva_fuerza.x, dt});
+            std.debug.print("Full new force vector: x: {d}, y: {d}, z: {d}\n", .{nueva_fuerza.x, nueva_fuerza.y, nueva_fuerza.z});
+            @panic("NaN detected in velocity update");
+        }
 
         // Update forces for the next iteration if memoization is being used
         if (current_forces) |forces| {
