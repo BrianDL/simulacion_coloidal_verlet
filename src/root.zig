@@ -76,10 +76,10 @@ fn calcularFuerzaLJEn(i: usize, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
         var r = @sqrt(r_squared);
         // std.debug.print("R: {any}\n", .{r});
 
-        while (r < 1e-6) {
-            dx += sign * (1e-6);
-            dy += sign * (1e-6);
-            dz += if (estado.z) |_| sign * (1e-6) else 0;
+        while (r < 1e-4) {
+            dx += sign * (1e-4);
+            dy += sign * (1e-4);
+            dz += if (estado.z) |_| sign * (1e-4) else 0;
             
 
             r_squared = dx*dx + dy*dy + dz*dz;
@@ -243,8 +243,8 @@ pub const Simulacion = struct {
 
         // Inicializar posiciones
         switch (estrategia_inicializacion.posicion) {
-            .al_azar => inicializarPosicionAlAzar(x, y, z, lado),
-            .esquina => inicializarPosicionEsquina(x, y, z),
+            .al_azar => inicializarPosicionAlAzar(x, y, z, @floatFromInt(lado)),
+            .esquina => inicializarPosicionAlAzar(x, y, z, sigma),
         }
 
         // Inicializar velocidades
@@ -277,29 +277,21 @@ pub const Simulacion = struct {
         self.allocator.free(self.estados);
     }
 
-    fn inicializarPosicionAlAzar(x: []f32, y: []f32, z: ?[]f32, lado: u32) void {
+    fn inicializarPosicionAlAzar(x: []f32, y: []f32, z: ?[]f32, lado: f32) void {
         var rng = std.rand.DefaultPrng.init(blk: {
             var seed: u64 = undefined;
             std.crypto.random.bytes(std.mem.asBytes(&seed));
             break :blk seed;
         });
         const random = rng.random();
-        const lado_flt = @as(f32, @floatFromInt(lado));
+        // const lado_flt = @as(f32, @floatFromInt(lado));
 
         for (x, y, 0..) |*xi, *yi, i| {
-            xi.* = random.float(f32) * lado_flt;
-            yi.* = random.float(f32) * lado_flt;
+            xi.* = random.float(f32) * lado;
+            yi.* = random.float(f32) * lado;
             if (z) |z_slice| {
-                z_slice[i] = random.float(f32) * lado_flt;
+                z_slice[i] = random.float(f32) * lado;
             }
-        }
-    }
-
-    fn inicializarPosicionEsquina(x: []f32, y: []f32, z: ?[]f32) void {
-        @memset(x, 0);
-        @memset(y, 0);
-        if (z) |z_slice| {
-            @memset(z_slice, 0);
         }
     }
 
@@ -393,6 +385,7 @@ test "inicializarPosicionEsquina" {
     const numero_dimensiones: u32 = 3;
     const lado: u32 = 10;
     const iteraciones_max: u32 = 1;
+    const sigma = 0.5;
 
     var sim = try Simulacion.init(
         numero_particulas, numero_dimensiones
@@ -400,14 +393,14 @@ test "inicializarPosicionEsquina" {
             .posicion = .esquina
             , .velocidad = .cero }
         , iteraciones_max
-        , allocator, null, null, null);
+        , allocator, null, sigma, null);
     defer sim.deinit();
 
     const estado = sim.estados[0];
     for (estado.x, estado.y, estado.z.?) |x, y, z| {
-        try testing.expectEqual(@as(f32, 0), x);
-        try testing.expectEqual(@as(f32, 0), y);
-        try testing.expectEqual(@as(f32, 0), z);
+        try testing.expectApproxEqAbs(@as(f32, 0.0), x, sigma);
+        try testing.expectApproxEqAbs(@as(f32, 0.0), y, sigma);
+        try testing.expectApproxEqAbs(@as(f32, 0.0), z, sigma);
     }
 }
 
@@ -730,4 +723,60 @@ test "pasoVerlet - Memoization" {
 
     try testing.expectApproxEqAbs(expected_pos_0, estado_final.x[0], 1e-6);
     try testing.expectApproxEqAbs(expected_pos_1, estado_final.x[1], 1e-6);
+}
+
+test "Simulacion.correr - System evolution" {
+    const allocator = std.testing.allocator;
+    const numero_particulas: usize = 10;
+    const numero_dimensiones: usize = 3;
+    const lado: f32 = 10.0;
+    const iteraciones_max: usize = 10;
+    const dt: f32 = 0.01;
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+
+    const estrategia = EstrategiaInicializacion{
+        .posicion = .al_azar,
+        .velocidad = .al_azar,
+    };
+
+    var sim = try Simulacion.init(
+        numero_particulas,
+        numero_dimensiones,
+        lado,
+        estrategia,
+        iteraciones_max,
+        allocator,
+        epsilon,
+        sigma,
+        dt
+    );
+    defer sim.deinit();
+
+    // Get the initial state
+    const estado_inicial = sim.estados[0];
+
+    // Run the simulation
+    try sim.correr();
+
+    // Get the final state
+    const estado_final = sim.estados[sim.estados.len - 1];
+
+    // Check that the simulation ran for the correct number of iterations
+    try testing.expectEqual(iteraciones_max, sim.estados.len);
+
+    // Check that the final state is different from the initial state
+    var is_different = false;
+    for (0..numero_particulas) |i| {
+        if (estado_inicial.x[i] != estado_final.x[i] or
+            estado_inicial.y[i] != estado_final.y[i] or
+            estado_inicial.z.?[i] != estado_final.z.?[i] or
+            estado_inicial.vx[i] != estado_final.vx[i] or
+            estado_inicial.vy[i] != estado_final.vy[i] or
+            estado_inicial.vz.?[i] != estado_final.vz.?[i]) {
+            is_different = true;
+        }
+    }
+
+    try testing.expect(is_different);
 }
