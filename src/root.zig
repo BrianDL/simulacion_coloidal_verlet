@@ -344,7 +344,7 @@ pub const Simulacion = struct {
         for (1..self.iteraciones_max) |i| {
             const estado_actual = self.estados[i - 1];
             const nuevo_estado = try pasoVerlet(
-                estado_actual, self.lado,
+                estado_actual, @floatFromInt(self.lado),
                 self.dt, self.sigma, self.epsilon,
                 self.allocator,
                 current_forces

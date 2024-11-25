@@ -1,24 +1,40 @@
 const std = @import("std");
+const root = @import("root.zig");
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    // Create an allocator
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    // Set up simulation parameters
+    const numero_particulas: u32 = 100;
+    const numero_dimensiones: u32 = 3;
+    const lado: u32 = 10;
+    const epsilon: f32 = 1.0;
+    const sigma: f32 = 1.0;
+    const dt: f32 = 0.01;
+    const iteraciones_max: u32 = 1000;
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    // Initialize the simulation
+    var sim = try root.Simulacion.init(
+        numero_particulas,
+        numero_dimensiones,
+        lado,
+        .{ .posicion = .al_azar, .velocidad = .al_azar },
+        iteraciones_max,
+        allocator,
+        epsilon,
+        sigma,
+        dt
+    );
+    defer sim.deinit();
 
-    try bw.flush(); // don't forget to flush!
-}
+    // Run the simulation
+    try sim.correr();
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+    // Print some final statistics or results
+    std.debug.print("Simulation completed with {} particles for {} iterations.\n", .{
+        numero_particulas, iteraciones_max
+    });
 }
