@@ -47,6 +47,19 @@ const Estado = struct {
     }
 };
 
+pub fn calcularEnergia(estado: Estado) f32 {
+    var energia_total: f32 = 0.0;
+
+    for (estado.vx, estado.vy, 0..) |vx, vy, i| {
+        const vz = if (estado.vz) |vz_slice| vz_slice[i] else 0;
+        const v_squared = vx * vx + vy * vy + vz * vz;
+        energia_total += 0.5 * v_squared;
+    }
+
+    return energia_total;
+}
+
+
 pub fn fuerzaLJ(sigma: f32, epsilon: f32, r: f32) f32 {
     const sigma_r = sigma / r;
     const sigma_r_6 = std.math.pow(f32, sigma_r, 6);

@@ -35,6 +35,9 @@ pub fn main() !void {
 
     // Export states to file
     try exportarEstados(&sim, "estados.txt");
+    
+    // Export energies to file
+    try exportarEnergias(&sim, "energias.txt");
 
     // Print some final statistics or results
     std.debug.print("Simulation completed with {} particles for {} iterations.\n", .{
@@ -73,5 +76,17 @@ fn exportarEstados(sim: *root.Simulacion, filename: []const u8) !void {
             }
         }
         try writer.writeByte('\n');
+    }
+}
+
+fn exportarEnergias(sim: *root.Simulacion, filename: []const u8) !void {
+    const file = try std.fs.cwd().createFile(filename, .{});
+    defer file.close();
+
+    var writer = file.writer();
+
+    for (sim.estados) |estado| {
+        const energia = root.calcularEnergia(estado);
+        try writer.print("{d}\n", .{energia});
     }
 }
