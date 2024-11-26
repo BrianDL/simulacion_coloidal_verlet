@@ -10,11 +10,11 @@ pub fn main() !void {
     // Set up simulation parameters
     const numero_particulas: u32 = 100;
     const numero_dimensiones: u32 = 3;
-    const lado: u32 = 1000;
+    const lado: u32 = 1e6;
     const epsilon: f32 = 1.0;
-    const sigma: f32 = 10.0;
-    const dt: f32 = 0.1;
-    const iteraciones_max: u32 = 1000;
+    const sigma: f32 = 1.0;
+    const dt: f32 = 1e-6;
+    const iteraciones_max: u32 = 1e4;
 
     // Initialize the simulation
     var sim = try root.Simulacion.init(

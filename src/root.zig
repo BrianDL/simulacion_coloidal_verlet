@@ -273,7 +273,7 @@ pub const Simulacion = struct {
         // Inicializar posiciones
         switch (estrategia_inicializacion.posicion) {
             .al_azar => inicializarPosicionAlAzar(x, y, z, @floatFromInt(lado)),
-            .esquina => inicializarPosicionAlAzar(x, y, z, sigma),
+            .esquina => inicializarPosicionAlAzar(x, y, z, 1.0),
         }
 
         // Inicializar velocidades
@@ -427,9 +427,9 @@ test "inicializarPosicionEsquina" {
 
     const estado = sim.estados[0];
     for (estado.x, estado.y, estado.z.?) |x, y, z| {
-        try testing.expectApproxEqAbs(@as(f32, 0.0), x, sigma);
-        try testing.expectApproxEqAbs(@as(f32, 0.0), y, sigma);
-        try testing.expectApproxEqAbs(@as(f32, 0.0), z, sigma);
+        try testing.expect( x >= 0.0 and x <= 1 );
+        try testing.expect( y >= 0.0 and y <= 1 );
+        try testing.expect( z >= 0.0 and z <= 1 );
     }
 }
 
@@ -808,4 +808,81 @@ test "Simulacion.correr - System evolution" {
     }
 
     try testing.expect(is_different);
+}
+
+test "Simulacion.correr - Seven particles in corner region" {
+    const allocator = std.testing.allocator;
+    const numero_particulas: usize = 100;
+    const numero_dimensiones: usize = 3;
+    const lado: f32 = 1e6;
+    const iteraciones_max: usize = 10000;
+    const dt: f32 = 1e-6;
+    const sigma: f32 = 1.0;
+    const epsilon: f32 = 1.0;
+
+    const estrategia = EstrategiaInicializacion{
+        .posicion = .esquina,
+        .velocidad = .al_azar,
+    };
+
+    var sim = try Simulacion.init(
+        numero_particulas,
+        numero_dimensiones,
+        lado,
+        estrategia,
+        iteraciones_max,
+        allocator,
+        epsilon,
+        sigma,
+        dt
+    );
+    defer sim.deinit();
+
+    // Get the initial state
+    const estado_inicial = sim.estados[0];
+
+    // Verify initial positions are within the corner region (unit cube)
+    for (0..numero_particulas) |i| {
+        try testing.expect(estado_inicial.x[i] >= 0.0 and estado_inicial.x[i] <= 1.0);
+        try testing.expect(estado_inicial.y[i] >= 0.0 and estado_inicial.y[i] <= 1.0);
+        try testing.expect(estado_inicial.z.?[i] >= 0.0 and estado_inicial.z.?[i] <= 1.0);
+    }
+
+    // Run the simulation
+    try sim.correr();
+
+    // Get the final state
+    const estado_final = sim.estados[sim.estados.len - 1];
+
+    // Check that the simulation ran for the correct number of iterations
+    try testing.expectEqual(iteraciones_max, sim.estados.len);
+
+    // Check that particles have moved away from the corner region
+    var particles_moved :u32 = 0;
+    for (0..numero_particulas) |i| {
+        if (estado_final.x[i] > 1.0 or estado_final.y[i] > 1.0 or estado_final.z.?[i] > 1.0) {
+            particles_moved += 1;
+        }
+    }
+
+    // Expect that at least some particles have moved out of the initial region
+    try testing.expect(particles_moved > 0);
+    std.debug.print("PARTICULAS_MOVIDAS: {}\n", .{particles_moved});
+
+    // Check that particles have spread out
+    var max_separation: f32 = 0.0;
+    for (0..numero_particulas) |i| {
+        for (i+1..numero_particulas) |j| {
+            const dx = estado_final.x[i] - estado_final.x[j];
+            const dy = estado_final.y[i] - estado_final.y[j];
+            const dz = estado_final.z.?[i] - estado_final.z.?[j];
+            const separation = @sqrt(dx*dx + dy*dy + dz*dz);
+            if (separation > max_separation) {
+                max_separation = separation;
+            }
+        }
+    }
+
+    // Expect that particles have spread out significantly
+    try testing.expect(max_separation > 2.0 * sigma);
 }

@@ -2,12 +2,14 @@
 
 import numpy as np
 from plotter import Plotter
+from container import Region, get_region
 
 class Simulation:
-    def __init__(self, steps):
+    def __init__(self, steps, L):
         self.steps = steps
+        self.container = get_region('block', (L,L,L) )
 
-def read_estados(filename):
+def read_estados(filename, L = 1000):
     steps = []
     with open(filename, 'r') as f:
         while True:
@@ -24,7 +26,7 @@ def read_estados(filename):
                 np.array(list(map(float, z.split())))
             )
             steps.append(step)
-    return Simulation(steps)
+    return Simulation(steps, L)
 
 # Read the data
-simulation = read_estados('estados.txt')
+sim = read_estados('estados.txt')
