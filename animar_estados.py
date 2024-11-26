@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import numpy as np
+from plotter import Plotter
+from container import Region, get_region
+
 # Modify the Simulation class to include energies
 class Simulation:
     def __init__(self, steps, L, energies=None):

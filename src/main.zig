@@ -10,10 +10,10 @@ pub fn main() !void {
     // Set up simulation parameters
     const numero_particulas: u32 = 100;
     const numero_dimensiones: u32 = 3;
-    const lado: u32 = 1e6;
+    const lado: u32 = 80;
     const epsilon: f32 = 1.0;
-    const sigma: f32 = 1.0;
-    const dt: f32 = 1e-6;
+    const sigma: f32 = 0.01;
+    const dt: f32 = 1e-2;
     const iteraciones_max: u32 = 1e4;
 
     // Initialize the simulation
@@ -21,7 +21,7 @@ pub fn main() !void {
         numero_particulas,
         numero_dimensiones,
         lado,
-        .{ .posicion = .esquina, .velocidad = .al_azar },
+        .{ .posicion = .esquina, .velocidad = .cero },
         iteraciones_max,
         allocator,
         epsilon,

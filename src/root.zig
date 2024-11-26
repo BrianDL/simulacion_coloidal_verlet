@@ -99,8 +99,9 @@ fn calcularFuerzaLJEn(i: usize, estado: Estado, sigma: f32, epsilon: f32) Vec3 {
             r = @sqrt(r_squared);
         }
 
-        const force_magnitude = 
-            if (r > 3.0*sigma) 0.0 else fuerzaLJ(sigma, epsilon, r);
+        // const force_magnitude = 
+        //     if (r > 3.0*sigma) 0.0 else fuerzaLJ(sigma, epsilon, r);
+        const force_magnitude = fuerzaLJ(sigma, epsilon, r);
         
         // Add this check after calculating force_magnitude
         if (std.math.isNan(force_magnitude)) {
