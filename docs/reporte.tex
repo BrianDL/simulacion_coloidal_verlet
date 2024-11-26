@@ -6,9 +6,10 @@
 \usepackage{amsmath}
 \usepackage[margin=1in]{geometry}
 \usepackage{url}
+\usepackage{hyperref}
 
 \title{Simulación de Sistema Coloidal Utilizando el Algoritmo de Verlet}
-\author{Tu Nombre}
+\author{Brian David Leiva - ECFM, USAC}
 \date{Noviembre, 2024}
 
 \begin{document}
@@ -16,7 +17,7 @@
 \maketitle
 
 \begin{abstract}
-Este trabajo presenta un estudio detallado de la simulación de sistemas coloidales utilizando el algoritmo de Verlet con velocidades y el potencial de Lennard-Jones. Implementado en el lenguaje de programación Zig, nuestro modelo explora la dinámica de partículas coloidales bajo diversas condiciones iniciales. La simulación abarca cuatro escenarios distintos: partículas distribuidas aleatoriamente con velocidades aleatorias, partículas agrupadas en una esquina con velocidades aleatorias, partículas distribuidas aleatoriamente con velocidades iniciales nulas, y partículas agrupadas en una esquina con velocidades iniciales nulas. A través de estas simulaciones, examinamos la evolución temporal del sistema, incluyendo la distribución espacial de las partículas, la conservación de energía, y la formación de estructuras estables. Nuestros resultados demuestran la eficacia del algoritmo de Verlet en la modelización de sistemas coloidales complejos, revelando comportamientos emergentes como la difusión, la agregación de partículas y la transición hacia estados de equilibrio. Este estudio proporciona insights valiosos sobre la física de los sistemas coloidales y establece una base sólida para futuras investigaciones en este campo, con potenciales aplicaciones en áreas como la ciencia de materiales, la química coloidal y la nanotecnología.
+Este trabajo presenta un estudio detallado de la simulación de sistemas coloidales utilizando el algoritmo de Verlet con velocidades y el potencial de Lennard-Jones. Implementado en el lenguaje de programación Zig, nuestro modelo explora la dinámica de partículas bajo diversas condiciones iniciales. La simulación abarca cuatro escenarios distintos: partículas distribuidas aleatoriamente con velocidades aleatorias, partículas agrupadas en una esquina con velocidades aleatorias, partículas distribuidas aleatoriamente con velocidades iniciales nulas, y partículas agrupadas en una esquina con velocidades iniciales nulas. A través de estas simulaciones, examinamos la evolución temporal del sistema, incluyendo la distribución espacial de las partículas, la conservación de energía, y la formación de estructuras estables. Nuestros resultados demuestran la eficacia del algoritmo de Verlet en la modelización de sistemas complejos, revelando comportamientos emergentes como la difusión, la agregación de partículas y la transición hacia estados de equilibrio. Este estudio proporciona insights valiosos sobre la física de los sistemas coloidales y establece una base sólida para futuras investigaciones en este campo, con potenciales aplicaciones en áreas como la ciencia de materiales, la química coloidal y la nanotecnología.
 \end{abstract}
 
 \section{Marco Teórico}
@@ -28,7 +29,7 @@ Las propiedades únicas de los sistemas coloidales surgen de la gran área super
 El estudio de los coloides es importante en diversos campos, desde la ciencia de materiales hasta la biología molecular, y es necesario comprenderlos para el desarrollo de nuevas tecnologías y aplicaciones en áreas como la medicina, la industria alimentaria y la nanotecnología.
 
 \subsection*{Algoritmo de Verlet con Velocidades}
-Para nuestra simulación utilizamos el algoritmo de Verlet \cite{verlet_wiki}. En particular, utilizaremos la variante conocida como algoritmo de Verlet con velocidades (Velocity Verlet), que calcula explícitamente las velocidades junto con las posiciones. Este método es especialmente útil en simulaciones de sistemas coloidales donde el cálculo preciso de las velocidades es importante para determinar propiedades dinámicas del sistema.
+Para nuestra simulación utilizamos el algoritmo de Verlet \cite{verlet_wiki}. En particular, utilizaremos la variante conocida como algoritmo de Verlet con velocidades (Velocity Verlet), que calcula explícitamente las velocidades junto con las posiciones. Este método es especialmente útil en simulaciones donde el cálculo preciso de las velocidades es importante para determinar propiedades dinámicas del sistema.
 
 La formulación del algoritmo de Verlet con velocidades para actualizar la posición y la velocidad de una partícula es:
 
@@ -52,14 +53,14 @@ El algoritmo se implementa en dos etapas:
     \end{equation}
 \end{enumerate}
 
-Este método ofrece varias ventajas para nuestra simulación de sistemas coloidales:
+Este método ofrece varias ventajas para nuestra simulación:
 \begin{itemize}
     \item Proporciona cálculos precisos tanto de posiciones como de velocidades en cada paso de tiempo.
     \item Mantiene una buena conservación de la energía a largo plazo.
     \item Facilita el cálculo de propiedades dinámicas como coeficientes de difusión y funciones de correlación de velocidades.
 \end{itemize}
 
-La implementación de este algoritmo en nuestra simulación nos permitirá modelar con precisión la dinámica de las partículas coloidales, capturando efectos sutiles de las interacciones entre partículas.
+La implementación de este algoritmo en nuestra simulación nos permitirá modelar con precisión la dinámica de las partículas, capturando efectos sutiles de las interacciones entre partículas.
 \subsection*{Propagación de Errores en el Algoritmo de Verlet con Velocidades}
 Este algoritmo, aunque generalmente estable, no está exento de acumular errores numéricos.
 
@@ -73,19 +74,9 @@ Los principales factores que contribuyen a la acumulación de errores en el algo
 \end{itemize}
 
 \subsubsection*{Análisis de Error}
-El error local de truncamiento para el algoritmo de Verlet con velocidades es del orden de $O(\Delta t^4)$ para las posiciones y $O(\Delta t^2)$ para las velocidades. Esto significa que:
+El error local de truncamiento para el algoritmo de Verlet con velocidades es del orden de $O(\Delta t^4)$ para las posiciones y $O(\Delta t^2)$ para las velocidades. Esto significa que el error en posición es $\propto \Delta t^4$, mientras el error en la velocidad $\propto \Delta t^2$.
 
-\begin{align}
-    \text{Error en posición} &\propto \Delta t^4 \
-    \text{Error en velocidad} &\propto \Delta t^2
-\end{align}
-
-El error global, que es la acumulación de errores locales a lo largo de la simulación, crece más lentamente:
-
-\begin{align}
-    \text{Error global en posición} &\propto \Delta t^2 \
-    \text{Error global en velocidad} &\propto \Delta t^2
-\end{align}
+El error global, que es la acumulación de errores locales a lo largo de la simulación, crece más lentamente: Error global en posición es $ \propto \Delta t^2$ y el error global en velocidad es $\propto \Delta t^2$.
 
 \subsubsection*{Estabilidad Numérica}
 La estabilidad del algoritmo depende de la elección del paso de tiempo $\Delta t$. Un paso de tiempo demasiado grande puede llevar a inestabilidades numéricas, mientras que uno demasiado pequeño aumenta el costo computacional y puede acumular errores de redondeo.
@@ -96,7 +87,7 @@ Para sistemas con fuerzas que varían rápidamente, como las interacciones de co
 Una ventaja del algoritmo de Verlet con velocidades es su buena conservación de la energía a largo plazo. Sin embargo, pueden observarse oscilaciones en la energía total del sistema. La magnitud de estas oscilaciones es proporcional a $\Delta t^2$, lo que nuevamente subraya la importancia de elegir un paso de tiempo apropiado.
 
 \subsection*{Potencial de Lennard-Jones}
-El potencial de Lennard-Jones es un modelo matemático ampliamente utilizado para describir las interacciones entre partículas en sistemas moleculares y coloidales. Este potencial captura tanto las fuerzas atractivas de largo alcance como las repulsivas de corto alcance que existen entre partículas.
+El potencial de Lennard-Jones es un modelo matemático ampliamente utilizado para describir las interacciones entre partículas en sistemas moleculares. Este potencial captura tanto las fuerzas atractivas de largo alcance como las repulsivas de corto alcance que existen entre partículas.
 
 \subsubsection*{Formulación Matemática}
 El potencial de Lennard-Jones entre dos partículas separadas por una distancia $r$ se expresa como:
@@ -128,12 +119,12 @@ El potencial de Lennard-Jones se compone de dos términos:
 \end{itemize}
 
 \subsubsection*{Aplicación en Simulaciones Coloidales}
-En nuestras simulaciones de sistemas coloidales, el potencial de Lennard-Jones se utiliza para modelar:
+En nuestras simulaciones, el potencial de Lennard-Jones se utiliza para modelar:
 
 \begin{itemize}
-    \item Interacciones entre partículas coloidales.
-    \item Interacciones entre partículas coloidales y moléculas del solvente (en simulaciones de grano grueso).
-    \item Fuerzas de solvatación y efectos de estructuración del solvente alrededor de las partículas coloidales.
+    \item Interacciones entre partículas.
+    \item Interacciones entre partículas y moléculas del solvente (en simulaciones de grano grueso).
+    \item Fuerzas de solvatación y efectos de estructuración del solvente alrededor de las partículas.
 \end{itemize}
 
 \subsubsection*{Implementación en el Algoritmo de Verlet}
@@ -151,12 +142,12 @@ Para incorporar el potencial de Lennard-Jones en nuestra simulación:
 La inclusión del potencial de Lennard-Jones en nuestro modelo permite una representación más realista de las interacciones en el sistema coloidal, capturando tanto los efectos repulsivos de corto alcance como las atracciones de largo alcance que modelan el comportamiento de estos sistemas.
 
 \subsection*{Simulaciones y Equilibrios Estables}
-Las simulaciones computacionales permiten explorar el comportamiento de los sistemas coloidales en condiciones difíciles de replicar experimentalmente. En particular, las simulaciones de dinámica molecular (DM) son importantes para investigar los equilibrios estables en estos sistemas.
+Las simulaciones computacionales permiten explorar el comportamiento de los sistemas en condiciones difíciles de replicar experimentalmente. En particular, las simulaciones de dinámica molecular (DM) son importantes para investigar los equilibrios estables en estos sistemas.
 
 Un equilibrio estable se refiere a una configuración del sistema en la que las fuerzas netas sobre las partículas se anulan mutuamente, resultando en una estructura estable en el tiempo. Las simulaciones permiten estudiar cómo estos equilibrios se establecen y cómo dependen de factores como:
 
 \begin{itemize}
-    \item La concentración de partículas coloidales
+    \item La concentración de partículas
     \item Las interacciones entre partículas (por ejemplo, fuerzas de Van der Waals, interacciones electrostáticas)
     \item La temperatura y presión del sistema
     \item La presencia de campos externos (como campos eléctricos o magnéticos)
@@ -167,7 +158,7 @@ Las simulaciones de DM, utilizando algoritmos como el de Verlet, son particularm
 Además, las simulaciones facilitan el cálculo de propiedades termodinámicas y estructurales del sistema en equilibrio.
 
 \section{Metodología}
-Para llevar a cabo la simulación del sistema coloidal utilizando el algoritmo de Verlet, se ha diseñado una estructura de programa en el lenguaje de programación Zig. La implementación se basa en un enfoque orientado a objetos, aprovechando las características de rendimiento y seguridad que ofrece Zig.
+Para llevar a cabo la simulación del sistema coloidal utilizando el algoritmo de Verlet, se ha diseñado una estructura de programa en el lenguaje de programación Zig. La implementación\cite{SimulacionColoidalVerlet} se basa en un enfoque orientado a objetos, aprovechando las características de rendimiento y seguridad que ofrece Zig.
 
 \subsection*{Estructura de la Simulación}
 La simulación se implementa principalmente a través de las estructuras y funciones definidas en el archivo `root.zig`:
@@ -202,10 +193,10 @@ La simulación se implementa principalmente a través de las estructuras y funci
         \item Se implementan comprobaciones para evitar la auto-interacción de partículas y manejar casos de distancias muy pequeñas entre partículas.
     \end{itemize}
 
-    \item \textbf{Manejo de Errores}: Se incluyen comprobaciones para detectar valores NaN (Not a Number) en cálculos críticos, lo que ayuda a identificar problemas numéricos durante la simulación.
+    \item \textbf{Manejo de Errores}: Se incluyen comprobaciones para detectar valores NaN (Not a Number) en los cálculos, lo que ayuda a identificar problemas numéricos durante la simulación.
 \end{itemize}
 
-Esta estructura proporciona una base sólida para simular sistemas coloidales, permitiendo flexibilidad en la inicialización y evolución del sistema, mientras se mantiene un control preciso sobre las interacciones entre partículas y la dinámica general del sistema.
+Esta estructura proporciona una base sólida para nuestra simulación, permitiendo flexibilidad en la inicialización y evolución del sistema, mientras se mantiene un control preciso sobre las interacciones entre partículas y la dinámica general del mismo.
 
 \subsection*{Implementación del Algoritmo de Verlet}
 
@@ -244,110 +235,138 @@ Tomamos en cuenta cuatro casos que corresponden a las combinaciones de estrategi
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.4\textwidth]{figures/40p_10ki_11.png}
+    \includegraphics[width=0.45\textwidth]{figures/40p_10ki_11.png}
     \caption{40 partículas en un caja de lado 100 en equilibrio térmico al final de 10,000 iteraciones de la simulación.}
     \label{fig:case1_equilibrio}
 \end{figure}
 
-En este escenario, observamos una dinámica inicial caótica característica de un sistema altamente energético. Las partículas, inicialmente distribuidas aleatoriamente con velocidades aleatorias, exhibieron rápidos movimientos y frecuentes colisiones. A medida que la simulación avanzaba, notamos una tendencia gradual hacia un estado de equilibrio térmico\ref{fig:case1_equilibrio}. La energía cinética inicial se redistribuyó entre las partículas a través de las interacciones de Lennard-Jones.
+En este escenario, observamos una dinámica inicial caótica característica de un sistema altamente energético. Las partículas, inicialmente distribuidas aleatoriamente con velocidades aleatorias, exhibieron rápidos movimientos y frecuentes colisiones. A medida que la simulación avanzaba, notamos una tendencia gradual hacia un estado de equilibrio térmico[Fig\ref{fig:case1_equilibrio}]. La energía cinética inicial se redistribuyó entre las partículas a través de las interacciones de Lennard-Jones.
 
-Las interacciones de corto alcance, dominadas por la parte repulsiva del potencial de Lennard-Jones, resultaron en frecuentes "rebotes" entre partículas cercanas. Simultáneamente, las interacciones atractivas de largo alcance comenzaron a influir en la estructura general del sistema. A lo largo de la simulación, observamos la formación y disolución de agrupaciones temporales de partículas, un fenómeno característico de sistemas coloidales en equilibrio dinámico.
+Las interacciones de corto alcance, dominadas por la parte repulsiva del potencial de Lennard-Jones, resultaron en frecuentes rebotes entre partículas cercanas. Simultáneamente, las interacciones atractivas de largo alcance comenzaron a influir en la estructura general del sistema. A lo largo de la simulación, observamos la formación y disolución de agrupaciones temporales de partículas, un fenómeno característico de sistemas en equilibrio dinámico.
 
 La energía total del sistema mostró fluctuaciones menores alrededor de un valor medio, consistente con la conservación de energía esperada en la integración de Verlet. Estas pequeñas fluctuaciones son atribuibles a errores numéricos inherentes al método de integración y a la discretización del tiempo en pasos finitos.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.4\textwidth]{figures/variacion_energia_40p_10ki_11.png}
+    \includegraphics[width=0.45\textwidth]{figures/variacion_energia_40p_10ki_11.png}
     \caption{Evolución del sistema desde el punto de vista de la energía para 40 partículas en una caja de 100 unidades de lado.}
     \label{fig:case1_energia}
 \end{figure}
 
-A medida que la simulación progresaba, el sistema evolucionó hacia una configuración más estable. Las partículas tendieron a mantener una separación promedio cercana al mínimo del potencial de Lennard-Jones, balanceando las fuerzas atractivas y repulsivas. Este comportamiento es consistente con la formación de una estructura fluida pero correlacionada, típica de sistemas coloidales en equilibrio térmico.
+A medida que la simulación progresaba, el sistema evolucionó hacia una configuración más estable. Las partículas tendieron a mantener una separación promedio cercana al mínimo del potencial de Lennard-Jones, balanceando las fuerzas atractivas y repulsivas. Este comportamiento es consistente con la formación de una estructura fluida pero correlacionada.
 
 La distribución espacial de las partículas, inicialmente uniforme debido a la inicialización aleatoria, desarrolló gradualmente patrones de correlación de corto alcance. Estos patrones se manifestaron como fluctuaciones locales en la densidad de partículas, reflejando la naturaleza de las interacciones de Lennard-Jones y la competencia entre las fuerzas atractivas y repulsivas.
 
-En general, la evolución del sistema bajo estas condiciones iniciales demostró la capacidad del algoritmo de Verlet para capturar la compleja dinámica de un sistema coloidal, desde un estado inicial de alta energía hasta un equilibrio dinámico caracterizado por correlaciones espaciales y una distribución estable de energía cinética entre las partículas\ref{fig:case1_energia}.
+En general, la evolución del sistema bajo estas condiciones iniciales demostró la capacidad del algoritmo de Verlet para capturar la compleja dinámica de un sistema coloidal, desde un estado inicial de alta energía hasta un equilibrio dinámico caracterizado por correlaciones espaciales y una distribución estable de energía cinética entre las partículas[Fig\ref{fig:case1_energia}].
 
 \subsection*{Caso 2: Posiciones al Azar, Velocidades Cero}
 
-En este escenario, donde las posiciones iniciales se generaron aleatoriamente pero todas las partículas comenzaron con velocidad cero, observamos una evolución del sistema marcadamente diferente al primer caso. Inicialmente, el sistema se encontraba en un estado de alta energía potencial debido a las posiciones aleatorias, pero con energía cinética nula.
+En este escenario, donde las posiciones iniciales se generaron aleatoriamente pero todas las partículas comenzaron con velocidad cero, observamos una evolución del sistema diferente al primer caso. Inicialmente, el sistema se encontraba en un estado de alta energía potencial debido a las posiciones aleatorias, pero con energía cinética nula.
 
-Al comenzar la simulación, las fuerzas derivadas del potencial de Lennard-Jones inmediatamente entraron en juego. Las partículas que se encontraban inicialmente muy cercanas experimentaron fuertes repulsiones, mientras que aquellas a distancias intermedias sintieron atracciones moderadas. Esta configuración inicial resultó en una rápida conversión de energía potencial a energía cinética, iniciando el movimiento del sistema.
 
-En las primeras etapas de la simulación, observamos movimientos abruptos y acelerados de las partículas, particularmente notables en aquellas que estaban inicialmente muy próximas entre sí. Esto llevó a una fase inicial de "explosión" donde el sistema se expandió rápidamente desde su configuración inicial compacta.
+Al comenzar la simulación, las fuerzas derivadas del potencial de Lennard-Jones inmediatamente entraron en juego. Las partículas que se encontraban inicialmente muy cercanas experimentaron fuertes repulsiones, mientras que aquellas a distancias intermedias sintieron atracciones moderadas. Esta configuración inicial resultó en una rápida conversión de energía potencial a energía cinética, iniciando el movimiento del sistema[Fig\ref{fig:case2energia}].
+
+\begin{figure}[]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/variacion_energia_40p_10ki_10.png}
+    \caption{Evolución del sistema desde el punto de vista de la energía para 40 partículas en una caja de 100 unidades de lado. Esta gráfica capta el momento en el que el sistema estalla desde el reposo inicial.}
+    \label{fig:case2energia}
+\end{figure}
+
+En las primeras etapas de la simulación, observamos movimientos abruptos y acelerados de las partículas, particularmente notables en aquellas que estaban inicialmente muy próximas entre sí. Esto llevó a una fase inicial de explosión donde el sistema se expandió rápidamente desde su configuración inicial compacta.
 
 A medida que la simulación avanzaba, el sistema comenzó a mostrar signos de equilibración. La energía, inicialmente concentrada en regiones de alta densidad de partículas, se distribuyó gradualmente por todo el sistema. Este proceso de redistribución de energía se manifestó como una transición desde movimientos iniciales muy rápidos y direccionales hacia movimientos más aleatorios y difusivos.
 
 La evolución de la energía total del sistema mostró un patrón interesante. Inicialmente, toda la energía estaba en forma potencial. Con el inicio del movimiento, observamos una rápida conversión a energía cinética, seguida de oscilaciones entre energía potencial y cinética que gradualmente se amortiguaron a medida que el sistema se acercaba al equilibrio.
 
-A diferencia del primer caso, donde el sistema comenzó en un estado de alta energía cinética, aquí vimos una evolución más gradual hacia el equilibrio térmico. La distribución de velocidades, inicialmente una función delta en cero, se expandió progresivamente hacia una distribución de Maxwell-Boltzmann a medida que las colisiones entre partículas redistribuían la energía.
-
 En términos de estructura espacial, el sistema pasó por varias fases. Desde la configuración inicial aleatoria, observamos primero una fase de expansión rápida, seguida por la formación de estructuras transitorias a medida que las partículas interactuaban. Eventualmente, el sistema evolucionó hacia una configuración más uniforme, pero con correlaciones espaciales características de un fluido de Lennard-Jones en equilibrio.
 
 La dinámica a largo plazo del sistema mostró un comportamiento difusivo, con partículas moviéndose a través del contenedor de simulación de manera más suave y continua en comparación con la fase inicial explosiva. Las correlaciones entre partículas se hicieron evidentes en la formación de estructuras locales temporales, reflejando el equilibrio entre las fuerzas atractivas y repulsivas del potencial de Lennard-Jones.
 
-En resumen, este caso demostró cómo un sistema inicialmente estático pero desordenado evoluciona bajo la influencia de interacciones de Lennard-Jones, ilustrando la conversión de energía potencial a cinética, la redistribución de energía en el sistema, y el eventual establecimiento de un equilibrio dinámico característico de sistemas coloidales.
+Este caso demostró cómo un sistema inicialmente estático pero desordenado evoluciona bajo la influencia de interacciones de Lennard-Jones, ilustrando la conversión de energía potencial a cinética, la redistribución de energía en el sistema, y el eventual establecimiento de un equilibrio dinámico.
 
 \subsection*{Caso 3: Posiciones en una Esquina, Velocidades al Azar}
 
-En este escenario, todas las partículas se colocaron inicialmente en una esquina del contenedor, pero con velocidades aleatorias. Esta configuración única nos permitió simular la expansión de un sistema inicialmente comprimido, proporcionando una valiosa oportunidad para estudiar fenómenos como la difusión y la formación de estructuras en condiciones extremas.
+En este escenario, todas las partículas se colocaron inicialmente en una esquina del contenedor, pero con velocidades aleatorias. Esta configuración nos permitió simular la expansión de un sistema inicialmente comprimido, proporcionando una valiosa oportunidad para estudiar fenómenos como la difusión y la formación de estructuras en condiciones extremas.
 
-Al inicio de la simulación, observamos una explosiva expansión del sistema desde la esquina del contenedor. Las partículas, inicialmente muy próximas entre sí, experimentaron fuertes repulsiones debido a la parte de corto alcance del potencial de Lennard-Jones. Esta repulsión, combinada con las velocidades aleatorias iniciales, resultó en una rápida dispersión de las partículas por todo el espacio de simulación.
 
-Durante esta fase inicial de expansión, la energía del sistema sufrió una transformación dramática. La alta energía potencial almacenada en la configuración inicial comprimida se convirtió rápidamente en energía cinética, impulsando el movimiento de las partículas. Observamos fluctuaciones significativas en la energía total del sistema durante esta fase, atribuibles a las intensas interacciones entre partículas y los límites de precisión del algoritmo de Verlet en condiciones de alta energía.
+Al inicio de la simulación, observamos una explosiva expansión del sistema desde la esquina del contenedor. Las partículas, inicialmente muy próximas entre sí, experimentaron fuertes repulsiones debido a la parte de corto alcance del potencial de Lennard-Jones. Esta repulsión, combinada con las velocidades aleatorias iniciales, resultó en una rápida dispersión de las partículas por todo el espacio de simulación. Este fenómeno se puede observar claramente en la \href{https://github.com/BrianDL/simulacion_coloidal_verlet/blob/main/docs/figures/system_evolution.gif}{animación disponible en el repositorio del proyecto}\footnote{\url{https://github.com/BrianDL/simulacion_coloidal_verlet/blob/main/docs/figures/system_evolution.gif}}.
 
-A medida que las partículas se dispersaban por el contenedor, comenzamos a observar la formación de estructuras transitorias. Clusters de partículas se formaban y disolvían dinámicamente, reflejando la competencia entre las fuerzas atractivas de largo alcance y las repulsivas de corto alcance del potencial de Lennard-Jones. Estas estructuras efímeras proporcionaron una visión fascinante de la auto-organización en sistemas coloidales fuera del equilibrio.
+Durante esta fase inicial de expansión, la energía del sistema sufrió una transformación dramática. La alta energía potencial almacenada en la configuración inicial comprimida se convirtió rápidamente en energía cinética, impulsando el movimiento de las partículas. Observamos fluctuaciones significativas en la energía total del sistema durante esta fase, atribuibles a las intensas interacciones entre partículas. 
 
-La evolución del sistema hacia el equilibrio siguió un patrón interesante. Inicialmente, observamos una fase de "sobrerelajación" donde las partículas tendían a dispersarse más allá de sus posiciones de equilibrio final. Esto fue seguido por una fase de "contracción" donde las fuerzas atractivas comenzaron a dominar, llevando gradualmente al sistema hacia una distribución más uniforme.
+\begin{figure}[]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/variacion_energia_40p_10ki_01.png}
+    \caption{Evolución del sistema desde el punto de vista de la energía para 40 partículas en una caja de 50 unidades de lado.}
+    \label{fig:case3energia}
+\end{figure}
 
-El comportamiento difusivo de las partículas se hizo evidente a medida que avanzaba la simulación. Observamos cómo el desplazamiento cuadrático medio de las partículas evolucionaba con el tiempo, mostrando inicialmente un régimen balístico debido a las altas velocidades iniciales, seguido por una transición hacia un régimen difusivo característico de sistemas coloidales en equilibrio.
+En la Figura \ref{fig:case3energia} podemos observar el estallido inicial de energía cinética al inicio, cuando todas la partículas estaban amontonadas en la esquina del espacio de simulación.
 
-La distribución de velocidades del sistema también experimentó una evolución notable. Partiendo de una distribución inicial aleatoria, observamos cómo las colisiones entre partículas y las interacciones de Lennard-Jones llevaron gradualmente a una distribución de Maxwell-Boltzmann, indicativa del establecimiento del equilibrio térmico.
+A medida que las partículas se dispersaban por el contenedor, comenzamos a observar la formación de estructuras transitorias. Clusters de partículas se formaban y disolvían dinámicamente, reflejando la competencia entre las fuerzas atractivas de largo alcance y las repulsivas de corto alcance del potencial de Lennard-Jones.
+
+La evolución del sistema hacia el equilibrio siguió un patrón interesante. Inicialmente, observamos una fase de sobrerelajación donde las partículas tendían a dispersarse más allá de sus posiciones de equilibrio final. Esto fue seguido por una fase de contracción donde las fuerzas atractivas comenzaron a dominar, llevando gradualmente al sistema hacia una distribución más uniforme.
+
+El comportamiento difusivo de las partículas se hizo evidente a medida que avanzaba la simulación. Observamos cómo el desplazamiento cuadrático medio de las partículas evolucionaba con el tiempo, mostrando inicialmente un régimen balístico debido a las altas velocidades iniciales, seguido por una transición hacia un régimen difusivo.
 
 A largo plazo, el sistema alcanzó un estado de equilibrio dinámico caracterizado por una distribución espacial relativamente uniforme de partículas, pero con fluctuaciones locales de densidad típicas de un fluido de Lennard-Jones. La memoria de la configuración inicial comprimida se desvaneció gradualmente, aunque observamos que el tiempo necesario para alcanzar una completa homogeneización fue significativamente mayor que en los casos con distribuciones iniciales más uniformes.
 
-Este caso demostró de manera efectiva cómo un sistema coloidal evoluciona desde un estado inicial altamente comprimido y energético hacia un equilibrio dinámico. La simulación capturó con éxito fenómenos complejos como la rápida expansión inicial, la formación de estructuras transitorias, y la eventual relajación hacia un estado de equilibrio, proporcionando valiosas ideas sobre la dinámica de sistemas coloidales en condiciones extremas.
+Este caso demostró de manera efectiva cómo un sistema coloidal evoluciona desde un estado inicial altamente comprimido y energético hacia un equilibrio dinámico. La simulación capturó con éxito fenómenos complejos como la rápida expansión inicial, la formación de estructuras transitorias, y la eventual relajación hacia un estado de equilibrio.
 
 \subsection*{Caso 4: Posiciones en una Esquina, Velocidades Cero}
 
 En este último escenario, las partículas se agruparon inicialmente en una esquina del contenedor con velocidades iniciales nulas. Esta configuración representó un sistema altamente comprimido y estático al inicio, proporcionando una oportunidad única para observar cómo las fuerzas repulsivas a corto alcance influyen en la evolución del sistema en ausencia de energía cinética inicial.
 
-Al comenzar la simulación, el sistema se encontraba en un estado de alta energía potencial debido a la proximidad extrema entre las partículas. La ausencia de velocidades iniciales significó que toda la dinámica subsiguiente fue impulsada únicamente por las fuerzas derivadas del potencial de Lennard-Jones. Los primeros instantes de la simulación fueron cruciales, ya que las fuertes repulsiones a corto alcance dominaron completamente la dinámica inicial.
+Al comenzar la simulación, el sistema se encontraba en un estado de alta energía potencial debido a la proximidad extrema entre las partículas. La ausencia de velocidades iniciales significó que toda la dinámica subsiguiente fue impulsada únicamente por las fuerzas derivadas del potencial de Lennard-Jones. En los primeros instantes de la simulación las fuertes repulsiones a corto alcance dominaron la dinámica inicial.
 
 Observamos una expansión explosiva del sistema desde la esquina del contenedor. Esta expansión fue notablemente más violenta y direccional que en el Caso 3, donde las velocidades aleatorias iniciales proporcionaban una dispersión más uniforme. En este caso, la expansión se asemejó más a una onda de choque, con las partículas más externas siendo expulsadas primero y creando un efecto cascada sobre las partículas interiores.
 
-La conversión de energía potencial a cinética fue dramática y casi instantánea. Las partículas adquirieron rápidamente altas velocidades, transformando la energía almacenada en la configuración comprimida en movimiento cinético. Esta fase inicial se caracterizó por velocidades extremadamente altas y trayectorias altamente no lineales, poniendo a prueba los límites de precisión del algoritmo de Verlet.
 
-A medida que el sistema se expandía, comenzamos a observar la formación de estructuras complejas y transitorias. A diferencia de los casos anteriores, donde las estructuras emergían de interacciones más equilibradas, aquí vimos la formación de "frentes de onda" de partículas, seguidos por regiones de baja densidad. Estas estructuras evolucionaron rápidamente, reflejando la naturaleza altamente dinámica y fuera del equilibrio del sistema.
+\begin{figure}[]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/variacion_energia_100p_10ki_00.png}
+    \caption{Evolución del sistema desde el punto de vista de la energía para 100 partículas en una caja de 80 unidades de lado.}
+    \label{fig:case4energia}
+\end{figure}
 
-La evolución hacia el equilibrio en este caso fue particularmente interesante. Después de la expansión inicial, observamos una fase de "rebote" donde algunas partículas, tras alcanzar los límites del contenedor, regresaban hacia el centro. Esto creó patrones de densidad complejos y fluctuantes, con regiones de alta y baja concentración de partículas que evolucionaban con el tiempo.
+La conversión de energía potencial a cinética fue dramática y casi instantánea como se puede observar en la Figura \ref{fig:case4energia}. Las partículas adquirieron rápidamente altas velocidades, transformando la energía almacenada en la configuración comprimida en movimiento cinético. Esta fase inicial se caracterizó por velocidades extremadamente altas y trayectorias altamente no lineales, poniendo a prueba los límites de precisión del algoritmo de Verlet.
+
+A medida que el sistema se expandía, comenzamos a observar la formación de estructuras complejas y transitorias. A diferencia de los casos anteriores, donde las estructuras emergían de interacciones más equilibradas, aquí vimos la formación de frentes de onda de partículas, seguidos por regiones de baja densidad. Estas estructuras evolucionaron rápidamente, reflejando la naturaleza altamente dinámica y fuera del equilibrio del sistema.
+
+La evolución hacia el equilibrio en este caso fue particularmente interesante. Después de la expansión inicial, observamos una fase de rebote donde algunas partículas, tras alcanzar los límites del contenedor, regresaban hacia el centro. Esto creó patrones de densidad complejos y fluctuantes, con regiones de alta y baja concentración de partículas que evolucionaban con el tiempo.
 
 El comportamiento difusivo de las partículas en este escenario mostró una transición más abrupta que en los casos anteriores. Inicialmente, el movimiento fue casi puramente balístico, con partículas moviéndose en líneas rectas a altas velocidades. La transición hacia un régimen difusivo fue más gradual y ocurrió a escalas de tiempo más largas, a medida que las colisiones entre partículas y con las paredes del contenedor disipaban la energía inicial y homogeneizaban el sistema.
 
-La distribución de velocidades evolucionó de manera fascinante. Partiendo de una función delta en cero, rápidamente se expandió hacia velocidades muy altas, para luego contraerse gradualmente hacia una distribución de Maxwell-Boltzmann a medida que el sistema se equilibraba. Este proceso de equilibración térmica fue más lento y mostró fluctuaciones más pronunciadas que en los casos con distribuciones iniciales de velocidad más uniformes.
+A largo plazo, el sistema alcanzó un estado de equilibrio dinámico similar al observado en los casos anteriores, con una distribución espacial relativamente uniforme pero con fluctuaciones locales características. Sin embargo, el tiempo necesario para alcanzar este equilibrio fue significativamente mayor, y las huellas de la configuración inicial altamente comprimida persistieron en la dinámica del sistema durante un tiempo considerable.
 
-A largo plazo, el sistema alcanzó un estado de equilibrio dinámico similar al observado en los casos anteriores, con una distribución espacial relativamente uniforme pero con fluctuaciones locales características. Sin embargo, el tiempo necesario para alcanzar este equilibrio fue significativamente mayor, y las "huellas" de la configuración inicial altamente comprimida persistieron en la dinámica del sistema durante un tiempo considerable.
-
-Este caso demostró de manera contundente la capacidad del potencial de Lennard-Jones para generar dinámicas complejas incluso partiendo de condiciones iniciales estáticas. La simulación capturó con éxito la transformación de un sistema altamente ordenado y comprimido en un estado de equilibrio dinámico, proporcionando valiosas insights sobre los mecanismos de relajación y equilibración en sistemas coloidales bajo condiciones extremas.
+Este caso demostró la capacidad del potencial de Lennard-Jones para generar dinámicas complejas incluso partiendo de condiciones iniciales estáticas. La simulación capturó con éxito la transformación de un sistema altamente ordenado y comprimido en un estado de equilibrio dinámico, proporcionando valiosas insights sobre los mecanismos de relajación y equilibración en sistemas coloidales bajo condiciones extremas.
 
 \section{Conclusiones}
 
-La simulación de sistemas coloidales utilizando el algoritmo de Verlet y el potencial de Lennard-Jones ha proporcionado valiosas perspectivas sobre la dinámica y el comportamiento de estas complejas estructuras moleculares. A través de los cuatro casos estudiados, hemos observado una rica variedad de fenómenos físicos que emergen de las interacciones entre partículas coloidales.
+La simulación de sistemas coloidales utilizando el algoritmo de Verlet y el potencial de Lennard-Jones ha proporcionado valiosas perspectivas sobre la dinámica y el comportamiento de estas complejas estructuras moleculares. A través de los cuatro casos estudiados, hemos observado una rica variedad de fenómenos físicos que emergen de las interacciones entre partículas.
 
-En primer lugar, la implementación del algoritmo de Verlet demostró ser robusta y eficiente para simular la evolución temporal de sistemas de múltiples partículas. Su capacidad para conservar la energía a largo plazo, incluso en situaciones de alta energía o densidad, subraya su utilidad en el estudio de sistemas coloidales. La precisión del algoritmo se evidenció en la estabilidad de las trayectorias de las partículas y en la conservación de la energía total del sistema a lo largo de las simulaciones.
+En primer lugar, la implementación del algoritmo de Verlet demostró ser robusta y eficiente para simular la evolución temporal de sistemas de múltiples partículas. Su capacidad para conservar la energía a largo plazo, incluso en situaciones de alta energía o densidad, subraya su utilidad en el estudio de sistemas complejos. La precisión del algoritmo se evidenció en la estabilidad de las trayectorias de las partículas y en la conservación de la energía total del sistema a lo largo de las simulaciones.
 
-Los diferentes escenarios iniciales explorados revelaron la importancia crítica de las condiciones iniciales en la evolución de sistemas coloidales. El caso de posiciones y velocidades aleatorias mostró una rápida evolución hacia el equilibrio térmico, mientras que los casos con partículas inicialmente agrupadas en una esquina proporcionaron insights fascinantes sobre procesos de expansión y redistribución de energía. Estas observaciones subrayan la sensibilidad de los sistemas coloidales a sus condiciones iniciales y la complejidad de su dinámica fuera del equilibrio.
+Los diferentes escenarios iniciales explorados revelaron la importancia de las condiciones iniciales en la evolución de los sistemas. El caso de posiciones y velocidades aleatorias mostró una rápida evolución hacia el equilibrio térmico, mientras que los casos con partículas inicialmente agrupadas en una esquina proporcionaron insights fascinantes sobre procesos de expansión y redistribución de energía. Estas observaciones subrayan la sensibilidad de los sistemas complejos a sus condiciones iniciales y la complejidad de su dinámica fuera del equilibrio.
 
-El potencial de Lennard-Jones demostró ser un modelo efectivo para capturar las interacciones fundamentales entre partículas coloidales. La competencia entre las fuerzas atractivas de largo alcance y las repulsivas de corto alcance dio lugar a comportamientos emergentes complejos, como la formación y disolución de clusters temporales y la estructuración del fluido a escalas microscópicas. Estos fenómenos son consistentes con las observaciones experimentales en sistemas coloidales reales, validando la elección del potencial de Lennard-Jones como una aproximación útil para este tipo de sistemas.
+El potencial de Lennard-Jones demostró ser un modelo efectivo para capturar las interacciones fundamentales entre partículas. La competencia entre las fuerzas atractivas de largo alcance y las repulsivas de corto alcance dio lugar a comportamientos emergentes complejos, como la formación y disolución de clusters temporales y la estructuración del fluido a escalas microscópicas. Estos fenómenos son consistentes con las observaciones experimentales en sistemas reales, validando la elección del potencial de Lennard-Jones como una aproximación útil para este tipo de sistemas.
 
 La transición de estados iniciales de alta energía o alta compresión hacia el equilibrio reveló procesos interesantes de redistribución de energía y homogeneización espacial. En particular, los casos con partículas inicialmente agrupadas mostraron fases distintivas de expansión explosiva, seguidas por períodos de reajuste y eventual equilibración. Estos resultados proporcionan una valiosa intuición sobre cómo los sistemas coloidales responden a perturbaciones extremas y cómo se recuperan hacia estados de equilibrio.
 
-El análisis de la evolución de la energía cinética y potencial a lo largo de las simulaciones ofreció una ventana hacia los mecanismos de transferencia de energía en sistemas coloidales. Observamos cómo la energía se redistribuye entre formas cinética y potencial, y cómo el sistema gradualmente se aproxima a una distribución de energía característica del equilibrio térmico. Estos hallazgos tienen implicaciones importantes para comprender los procesos de termalización en sistemas de muchas partículas.
+El análisis de la evolución de la energía cinética y potencial a lo largo de las simulaciones ofreció una ventana hacia los mecanismos de transferencia de energía en sistemas de partículas. Observamos cómo la energía se redistribuye entre formas cinética y potencial, y cómo el sistema gradualmente se aproxima a una distribución de energía característica del equilibrio térmico. Estos hallazgos tienen implicaciones importantes para comprender los procesos de termalización en sistemas de muchas partículas.
 
-En conclusión, este estudio ha demostrado el poder de las simulaciones computacionales para investigar sistemas coloidales complejos. Los resultados obtenidos no solo validan la efectividad del algoritmo de Verlet y el potencial de Lennard-Jones para modelar estos sistemas, sino que también proporcionan nuevas perspectivas sobre su comportamiento dinámico. Estas simulaciones abren caminos para futuras investigaciones, como el estudio de efectos de temperatura y presión variables, la inclusión de interacciones más complejas, o la exploración de sistemas con un mayor número de partículas. Además, los métodos y resultados presentados aquí pueden servir como base para el desarrollo de modelos más sofisticados y para la interpretación de datos experimentales en el campo de la materia condensada y la física de coloides.
+Este estudio ha demostrado el poder de las simulaciones computacionales para investigar sistemas complejos. Los resultados obtenidos no solo validan la efectividad del algoritmo de Verlet y el potencial de Lennard-Jones para modelar estos sistemas, sino que también proporcionan nuevas perspectivas sobre su comportamiento dinámico. Estas simulaciones abren caminos para futuras investigaciones, como el estudio de efectos de temperatura y presión variables, la inclusión de interacciones más complejas, o la exploración de sistemas con un mayor número de partículas. Además, los métodos y resultados presentados aquí pueden servir como base para el desarrollo de modelos más sofisticados y para la interpretación de datos experimentales en el campo de la materia condensada y la física de coloides.
 
 \begin{thebibliography}{9}
+        
 \bibitem{verlet_wiki} Wikipedia contributors. (2023). Verlet integration. In Wikipedia, The Free Encyclopedia. Retrieved [November, 2024], from \url{https://en.wikipedia.org/wiki/Verlet_integration}
-\end{thebibliography}
 
+\bibitem{SimulacionColoidalVerlet}
+Brian David Leiva,
+\emph{Simulación Coloidal con el Algoritmo de Verlet},
+GitHub repository,
+2024,
+\url{https://github.com/BrianDL/simulacion_coloidal_verlet}
+    
+\end{thebibliography}
 \end{document}
